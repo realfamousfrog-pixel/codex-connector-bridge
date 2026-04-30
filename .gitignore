@@ -1,0 +1,9 @@
+mcp/service-auth-gateway/data/*
+!mcp/service-auth-gateway/data/README.md
+
+node_modules/
+.cache/
+.tmp/
+dist/
+build/
+coverage/

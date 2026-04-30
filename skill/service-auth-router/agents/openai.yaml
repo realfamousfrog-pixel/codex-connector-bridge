@@ -1,0 +1,3 @@
+interface:
+  display_name: "Service Auth Router"
+  short_description: "Route GitHub and Google login flows"

@@ -132,7 +132,7 @@ test("auth_validate restores github when only secret exists", async () => {
         status: 200,
         headers: new Headers({ "x-oauth-scopes": "repo,user" }),
         async text() {
-          return JSON.stringify({ login: "demo-user" });
+          return JSON.stringify({ login: "demo-user", name: "Demo User" });
         },
       };
     }
@@ -141,7 +141,7 @@ test("auth_validate restores github when only secret exists", async () => {
   try {
     const result = await gateway.auth_validate({ provider: "github" });
     assert.equal(result.state, "authenticated");
-    assert.equal(result.accountLabel, "demo-user");
+    assert.equal(result.accountLabel, "Demo User");
     assert.equal(result.nextAction, "ready");
   } finally {
     global.fetch = originalFetch;
@@ -306,6 +306,16 @@ test("google browser oauth callback can complete with mocked token exchange", as
         },
       };
     }
+    if (String(url).includes("gmail.googleapis.com/gmail/v1/users/me/profile")) {
+      return {
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        async text() {
+          return JSON.stringify({ emailAddress: "demo@example.com" });
+        },
+      };
+    }
     throw new Error(`Unexpected URL: ${url}`);
   };
 
@@ -347,6 +357,110 @@ test("auth_status_overview returns a visualization-friendly summary", async () =
   assert.equal(result.summary.length, 2);
   assert.ok(result.summary.every((item) => "provider" in item));
   assert.ok(result.summary.every((item) => "state" in item));
+});
+
+test("auth_status_cards returns github and gmail cached cards", async () => {
+  process.env.CODEX_AUTH_GATEWAY_SECRET_GITHUB = JSON.stringify({ token: "demo-token" });
+  const gateway = await createGateway();
+  const result = await gateway.auth_status_cards();
+  assert.equal(Array.isArray(result.cards), true);
+  assert.deepEqual(
+    result.cards.map((item) => item.id).sort(),
+    ["github", "gmail"],
+  );
+  const githubCard = result.cards.find((item) => item.id === "github");
+  assert.equal(githubCard.state, "saved");
+  assert.equal(githubCard.statusSource, "cached");
+  assert.equal(githubCard.isOnlineVerified, false);
+  assert.equal(githubCard.stateLabel, "已保存，待校验");
+  assert.equal(githubCard.statusSourceLabel, "本地摘要");
+  assert.equal(githubCard.accountLabelTitle, "GitHub 账号");
+});
+
+test("auth_refresh_status_card validates github online", async () => {
+  process.env.CODEX_AUTH_GATEWAY_SECRET_GITHUB = JSON.stringify({ token: "demo-token" });
+  const gateway = await createGateway();
+  const originalFetch = global.fetch;
+  global.fetch = async (url) => {
+    if (String(url).includes("api.github.com/user")) {
+      return {
+        ok: true,
+        status: 200,
+        headers: new Headers({ "x-oauth-scopes": "repo,user" }),
+        async text() {
+          return JSON.stringify({ login: "demo-user", name: "Demo User" });
+        },
+      };
+    }
+    throw new Error(`Unexpected URL: ${url}`);
+  };
+  try {
+    const result = await gateway.auth_refresh_status_card({ cardId: "github" });
+    assert.equal(result.state, "authenticated");
+    assert.equal(result.statusSource, "online");
+    assert.equal(result.isOnlineVerified, true);
+    assert.equal(result.accountLabel, "Demo User");
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test("auth_refresh_status_card validates gmail from google provider", async () => {
+  process.env.CODEX_AUTH_GATEWAY_SECRET_GOOGLE = JSON.stringify({
+    clientId: "client-id",
+    clientSecret: "client-secret",
+    refreshToken: "refresh-token",
+    grantedBundles: ["gmail-basic"],
+  });
+  const gateway = await createGateway();
+  const originalFetch = global.fetch;
+  global.fetch = async (url) => {
+    if (String(url).includes("oauth2.googleapis.com/token")) {
+      return {
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        async json() {
+          return { access_token: "access-token", expires_in: 3600 };
+        },
+        async text() {
+          return JSON.stringify({ access_token: "access-token", expires_in: 3600 });
+        },
+      };
+    }
+    if (String(url).includes("googleapis.com/oauth2/v2/userinfo")) {
+      return {
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        async text() {
+          return JSON.stringify({ email: "fallback@example.com" });
+        },
+      };
+    }
+    if (String(url).includes("gmail.googleapis.com/gmail/v1/users/me/profile")) {
+      return {
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        async text() {
+          return JSON.stringify({ emailAddress: "demo@example.com" });
+        },
+      };
+    }
+    throw new Error(`Unexpected URL: ${url}`);
+  };
+  try {
+    const result = await gateway.auth_refresh_status_card({ cardId: "gmail" });
+    assert.equal(result.state, "authenticated");
+    assert.equal(result.statusSource, "online");
+    assert.equal(result.accountLabel, "demo@example.com");
+    assert.equal(result.stateLabel, "已登录");
+    assert.equal(result.statusSourceLabel, "已在线校验");
+    assert.equal(result.message, "Gmail 登录状态校验通过");
+  } finally {
+    global.fetch = originalFetch;
+  }
 });
 
 test("auth_resolve_route sends github read operations to local fallback when official connector cannot be stably verified", async () => {
@@ -1545,4 +1659,58 @@ test("ui_open_panel returns local URL and panel API requires token", async () =>
   assert.equal(unauthorized.status, 401);
   const authorized = await fetch(panel.url.replace("/?token=", "/api/status-overview?token="));
   assert.equal(authorized.status, 200);
+});
+
+test("panel status card APIs return github and gmail cards and require token", async () => {
+  const gateway = await createGateway();
+  const panel = await gateway.ui_open_panel();
+  const unauthorized = await fetch(panel.url.replace("/?token=", "/api/status-cards?token=bad"), {
+    method: "POST",
+  });
+  assert.equal(unauthorized.status, 401);
+
+  const token = new URL(panel.url).searchParams.get("token");
+  const cardsResponse = await fetch(panel.url.replace("/?token=", "/api/status-cards?token="), {
+    method: "POST",
+  });
+  assert.equal(cardsResponse.status, 200);
+  const cardsPayload = await cardsResponse.json();
+  assert.deepEqual(
+    cardsPayload.cards.map((item) => item.id).sort(),
+    ["github", "gmail"],
+  );
+
+  const originalFetch = global.fetch;
+  global.fetch = async (url, options = {}) => {
+    if (String(url).startsWith("http://127.0.0.1:") || String(url).startsWith("http://localhost:")) {
+      return originalFetch(url, options);
+    }
+    if (String(url).includes("api.github.com/user")) {
+      return {
+        ok: true,
+        status: 200,
+        headers: new Headers({ "x-oauth-scopes": "repo,user" }),
+        async text() {
+          return JSON.stringify({ login: "demo-user", name: "Demo User" });
+        },
+      };
+    }
+    throw new Error(`Unexpected URL: ${url}`);
+  };
+  process.env.CODEX_AUTH_GATEWAY_SECRET_GITHUB = JSON.stringify({ token: "demo-token" });
+  try {
+    const refreshResponse = await fetch(
+      `http://127.0.0.1:${new URL(panel.url).port}/api/status-cards/refresh?token=${token}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cardId: "github" }),
+      },
+    );
+    assert.equal(refreshResponse.status, 200);
+    const refreshPayload = await refreshResponse.json();
+    assert.equal(refreshPayload.card.id, "github");
+  } finally {
+    global.fetch = originalFetch;
+  }
 });

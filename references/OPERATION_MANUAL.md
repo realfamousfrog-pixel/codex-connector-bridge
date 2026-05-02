@@ -72,8 +72,8 @@
 
 相关导航：
 
-- [DOCUMENTATION_GUIDE.md](D:/project/CodexWorkSpace/2026-04-29-login-business/DOCUMENTATION_GUIDE.md)
-- [PROJECT_CONTEXT.md](D:/project/CodexWorkSpace/2026-04-29-login-business/PROJECT_CONTEXT.md)
+- [DOCUMENTATION_GUIDE.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/DOCUMENTATION_GUIDE.md)
+- [PROJECT_CONTEXT.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/PROJECT_CONTEXT.md)
 
 ## 使用前提
 
@@ -296,7 +296,7 @@ Google OAuth 默认支持：
 进入目录：
 
 ```powershell
-cd D:\project\CodexWorkSpace\2026-04-29-login-business\mcp\service-auth-gateway
+cd D:\project\CodexWorkSpace\2026-04-29-login-experience\mcp\service-auth-gateway
 ```
 
 启动服务：
@@ -652,10 +652,41 @@ ui_open_panel()
 
 #### 当前面板能力
 
-- 查看 GitHub / Google 登录总览
-- 手动校验 GitHub 登录
+- 首屏显示 GitHub / Gmail 缓存状态卡，再自动执行在线校验
+- 手动刷新 GitHub / Gmail 单张状态卡
+- GitHub 账号优先显示 GitHub name，缺少时回退为 `@login`
+- Gmail 账号优先显示 Gmail profile 邮箱，拿不到时回退到 Google profile email
 - 注销 GitHub 本地凭据
+- 当前不支持面板内 Gmail 注销
 - 填写仓库链接、commit message 并执行 GitHub 发布预览 / 发布
+- 预览区显示待提交文件扁平列表，执行后结果区会继续显示发布结果或阻塞原因
+
+### 查看登录状态卡
+
+#### 前提
+
+- MCP 服务已可调用
+
+#### 步骤
+
+调用：
+
+```text
+auth_status_cards()
+```
+
+单卡在线校验：
+
+```text
+auth_refresh_status_card({ cardId: "github" })
+auth_refresh_status_card({ cardId: "gmail" })
+```
+
+#### 结果
+
+- 返回 GitHub / Gmail 两张体验层状态卡
+- 区分当前是本地缓存摘要还是已完成在线校验
+- 用中文用户态文案显示状态、账号和下一步动作
 
 ### GitHub 仓库链接发布
 
@@ -989,7 +1020,7 @@ auth_logout({ provider: "google" })
 
 更完整说明可参考：
 
-- [LOGIN_STATUS_USAGE.md](D:/project/CodexWorkSpace/2026-04-29-login-business/references/LOGIN_STATUS_USAGE.md)
+- [LOGIN_STATUS_USAGE.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/references/LOGIN_STATUS_USAGE.md)
 
 当前状态含义如下：
 

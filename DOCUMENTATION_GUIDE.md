@@ -18,37 +18,37 @@
 
 看：
 
-- [README.md](D:/project/CodexWorkSpace/2026-04-29-login-business/README.md)
+- [README.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/README.md)
 
 ### 想看项目目标、限制、维护上下文
 
 看：
 
-- [PROJECT_CONTEXT.md](D:/project/CodexWorkSpace/2026-04-29-login-business/PROJECT_CONTEXT.md)
+- [PROJECT_CONTEXT.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/PROJECT_CONTEXT.md)
 
 ### 想理解 MCP 和整体设计
 
 看：
 
-- [references/MCP_AND_PROJECT_GUIDE.md](D:/project/CodexWorkSpace/2026-04-29-login-business/references/MCP_AND_PROJECT_GUIDE.md)
+- [references/MCP_AND_PROJECT_GUIDE.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/references/MCP_AND_PROJECT_GUIDE.md)
 
 ### 想实际操作项目
 
 看：
 
-- [references/OPERATION_MANUAL.md](D:/project/CodexWorkSpace/2026-04-29-login-business/references/OPERATION_MANUAL.md)
+- [references/OPERATION_MANUAL.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/references/OPERATION_MANUAL.md)
 
 ### 想查看登录状态说明
 
 看：
 
-- [references/LOGIN_STATUS_USAGE.md](D:/project/CodexWorkSpace/2026-04-29-login-business/references/LOGIN_STATUS_USAGE.md)
+- [references/LOGIN_STATUS_USAGE.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/references/LOGIN_STATUS_USAGE.md)
 
 ### 想看 provider / bundle 对照
 
 看：
 
-- [references/provider-matrix.md](D:/project/CodexWorkSpace/2026-04-29-login-business/references/provider-matrix.md)
+- [references/provider-matrix.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/references/provider-matrix.md)
 
 ## 按读者类型导航
 
@@ -56,24 +56,24 @@
 
 推荐顺序：
 
-1. [README.md](D:/project/CodexWorkSpace/2026-04-29-login-business/README.md)
-2. [references/MCP_AND_PROJECT_GUIDE.md](D:/project/CodexWorkSpace/2026-04-29-login-business/references/MCP_AND_PROJECT_GUIDE.md)
-3. [references/OPERATION_MANUAL.md](D:/project/CodexWorkSpace/2026-04-29-login-business/references/OPERATION_MANUAL.md)
+1. [README.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/README.md)
+2. [references/MCP_AND_PROJECT_GUIDE.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/references/MCP_AND_PROJECT_GUIDE.md)
+3. [references/OPERATION_MANUAL.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/references/OPERATION_MANUAL.md)
 
 ### 维护者
 
 推荐优先看：
 
-1. [PROJECT_CONTEXT.md](D:/project/CodexWorkSpace/2026-04-29-login-business/PROJECT_CONTEXT.md)
-2. [references/OPERATION_MANUAL.md](D:/project/CodexWorkSpace/2026-04-29-login-business/references/OPERATION_MANUAL.md)
-3. [references/provider-matrix.md](D:/project/CodexWorkSpace/2026-04-29-login-business/references/provider-matrix.md)
+1. [PROJECT_CONTEXT.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/PROJECT_CONTEXT.md)
+2. [references/OPERATION_MANUAL.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/references/OPERATION_MANUAL.md)
+3. [references/provider-matrix.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/references/provider-matrix.md)
 
 ### 实际操作者
 
 推荐优先看：
 
-1. [references/OPERATION_MANUAL.md](D:/project/CodexWorkSpace/2026-04-29-login-business/references/OPERATION_MANUAL.md)
-2. [references/LOGIN_STATUS_USAGE.md](D:/project/CodexWorkSpace/2026-04-29-login-business/references/LOGIN_STATUS_USAGE.md)
+1. [references/OPERATION_MANUAL.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/references/OPERATION_MANUAL.md)
+2. [references/LOGIN_STATUS_USAGE.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/references/LOGIN_STATUS_USAGE.md)
 
 ## 按阶段导航
 
@@ -81,35 +81,35 @@
 
 先看：
 
-- [README.md](D:/project/CodexWorkSpace/2026-04-29-login-business/README.md)
-- [references/MCP_AND_PROJECT_GUIDE.md](D:/project/CodexWorkSpace/2026-04-29-login-business/references/MCP_AND_PROJECT_GUIDE.md)
+- [README.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/README.md)
+- [references/MCP_AND_PROJECT_GUIDE.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/references/MCP_AND_PROJECT_GUIDE.md)
 
 ### 准备开始登录
 
 先看：
 
-- [references/OPERATION_MANUAL.md](D:/project/CodexWorkSpace/2026-04-29-login-business/references/OPERATION_MANUAL.md)
+- [references/OPERATION_MANUAL.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/references/OPERATION_MANUAL.md)
 
 ### 准备排查问题
 
 先看：
 
-- [references/OPERATION_MANUAL.md](D:/project/CodexWorkSpace/2026-04-29-login-business/references/OPERATION_MANUAL.md)
-- [references/LOGIN_STATUS_USAGE.md](D:/project/CodexWorkSpace/2026-04-29-login-business/references/LOGIN_STATUS_USAGE.md)
+- [references/OPERATION_MANUAL.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/references/OPERATION_MANUAL.md)
+- [references/LOGIN_STATUS_USAGE.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/references/LOGIN_STATUS_USAGE.md)
 
 ### 后续新增能力时应该更新哪些文档
 
 优先更新：
 
-- [PROJECT_CONTEXT.md](D:/project/CodexWorkSpace/2026-04-29-login-business/PROJECT_CONTEXT.md)
-- [references/OPERATION_MANUAL.md](D:/project/CodexWorkSpace/2026-04-29-login-business/references/OPERATION_MANUAL.md)
+- [PROJECT_CONTEXT.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/PROJECT_CONTEXT.md)
+- [references/OPERATION_MANUAL.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/references/OPERATION_MANUAL.md)
 
 如有必要，再同步更新：
 
-- [README.md](D:/project/CodexWorkSpace/2026-04-29-login-business/README.md)
-- [references/MCP_AND_PROJECT_GUIDE.md](D:/project/CodexWorkSpace/2026-04-29-login-business/references/MCP_AND_PROJECT_GUIDE.md)
-- [references/LOGIN_STATUS_USAGE.md](D:/project/CodexWorkSpace/2026-04-29-login-business/references/LOGIN_STATUS_USAGE.md)
-- [references/provider-matrix.md](D:/project/CodexWorkSpace/2026-04-29-login-business/references/provider-matrix.md)
+- [README.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/README.md)
+- [references/MCP_AND_PROJECT_GUIDE.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/references/MCP_AND_PROJECT_GUIDE.md)
+- [references/LOGIN_STATUS_USAGE.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/references/LOGIN_STATUS_USAGE.md)
+- [references/provider-matrix.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/references/provider-matrix.md)
 
 ## 文档角色说明
 
@@ -149,6 +149,8 @@
 - 运行测试和 smoke test
 - 查看 provider 列表
 - 查看登录状态摘要
+- 查看 GitHub / Gmail 状态卡
+- 对单张状态卡执行在线校验
 - 查看业务请求路由决策
 - GitHub 聊天统一入口第一阶段
 - GitHub `manual_token` 登录
@@ -157,6 +159,7 @@
 - GitHub 仓库链接发布预览 / 执行
 - Google `browser_oauth` / `manual_refresh_token` 登录
 - 状态校验与注销
+- 本地 HTML 面板 `ui_open_panel`
 
 ### 当前未实现
 
@@ -164,4 +167,6 @@
 - 在本地 MCP 中直接实现 Gmail 发信/读信
 - 在本地 MCP 中直接实现 GitHub 标签修改、merge、release 等更完整写操作
 - Google 业务聊天入口统一
-- 点击式网页登录面板
+- 面板内直接发起 GitHub / Gmail 登录
+- 面板内 Gmail 注销
+- 更完整桌面级交互面板

@@ -57,6 +57,8 @@ Use this skill as the single chat entrypoint for authentication work, and as the
 - `auth_list_providers`
 - `auth_status`
 - `auth_status_overview`
+- `auth_status_cards`
+- `auth_refresh_status_card`
 - `auth_resolve_route`
 - `auth_begin`
 - `auth_complete`
@@ -220,6 +222,7 @@ Return a concise routing summary with:
 - next required user action
 
 For login visualization or "what is logged in right now" requests, prefer `auth_status_overview` first, then drill into `auth_status` for a specific provider when needed.
+For experience-layer card or panel scenarios, prefer `auth_status_cards`, then use `auth_refresh_status_card` for single-card online validation.
 For business-operation requests, prefer `auth_resolve_route` first so the response can clearly distinguish `use_official_connector`, `use_local_auth_gateway`, and `auth_blocked_with_reason`.
 For GitHub business-operation requests in V1, `repositoryUrl` is required for local fallback tools.
 For local write and publish execution, include a short execution-plan summary before asking for confirmation.

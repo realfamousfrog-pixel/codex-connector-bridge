@@ -332,6 +332,8 @@ GitHub 聊天统一入口第一阶段只有在以下条件全部满足时，才�
 - `auth_list_providers`
 - `auth_status`
 - `auth_status_overview`
+- `auth_status_cards`
+- `auth_refresh_status_card`
 - `auth_begin`
 - `auth_complete`
 - `auth_validate`
@@ -369,21 +371,21 @@ GitHub 聊天统一入口第一阶段只有在以下条件全部满足时，才�
 本地运行入口：
 
 ```powershell
-cd D:\project\CodexWorkSpace\2026-04-29-login-business\mcp\service-auth-gateway
+cd D:\project\CodexWorkSpace\2026-04-29-login-experience\mcp\service-auth-gateway
 npm start
 ```
 
 测试命令：
 
 ```powershell
-cd D:\project\CodexWorkSpace\2026-04-29-login-business\mcp\service-auth-gateway
+cd D:\project\CodexWorkSpace\2026-04-29-login-experience\mcp\service-auth-gateway
 npm test
 ```
 
 MCP smoke test：
 
 ```powershell
-cd D:\project\CodexWorkSpace\2026-04-29-login-business\mcp\service-auth-gateway
+cd D:\project\CodexWorkSpace\2026-04-29-login-experience\mcp\service-auth-gateway
 npm run smoke
 ```
 
@@ -398,6 +400,7 @@ npm run smoke
 
 - 结构化状态可视化：
   - `auth_status_overview()`
+  - `auth_status_cards()`
 - 本地 HTML 面板：
   - `ui_open_panel()`
 
@@ -416,12 +419,29 @@ auth_status_overview()
 - 上次校验时间
 - 下一步建议动作
 
+如果要查看面向体验层的 GitHub / Gmail 状态卡，推荐使用：
+
+```text
+auth_status_cards()
+```
+
+对应的单卡在线刷新入口：
+
+```text
+auth_refresh_status_card({ cardId: "github" })
+auth_refresh_status_card({ cardId: "gmail" })
+```
+
 本地 HTML 面板当前支持：
 
-- 查看 GitHub / Google 登录总览
-- 手动校验 GitHub 登录
+- 首屏显示 GitHub / Gmail 缓存摘要，再自动执行在线校验
+- 手动刷新 GitHub / Gmail 单张状态卡
+- GitHub 卡片账号优先显示 GitHub name，缺少时回退为 `@login`
+- Gmail 卡片账号优先显示 Gmail profile 邮箱，拿不到时回退到 Google profile email
 - 注销 GitHub 本地凭据
+- 当前不支持面板内 Gmail 注销
 - 输入仓库链接、commit message 并执行 GitHub 发布预览 / 发布
+- 预览区显示待提交文件扁平列表，执行后结果区保留发布结果或阻塞原因
 
 # 凭据与状态
 
@@ -473,6 +493,8 @@ auth_status_overview()
 - GitHub 聊天统一入口第一阶段当前仍未覆盖标签修改、merge、approve / request changes、release 等更完整写操作。
 - GitHub 聊天统一入口第一阶段当前仍要求业务操作明确提供 `repositoryUrl`，发布明确提供 `commitMessage` 并在预览后确认。
 - 即使后续接入 Codex 设置中的 MCP 管理，也不等于 Codex 原生会显示“Gmail 已登录 / GitHub 已登录”的平台级登录面板。
+- 当前面板中的 Gmail 状态卡只是 `google + gmail-basic` 的本地在线校验，不代表官方 Gmail connector 登录态。
+- 当前面板只覆盖状态查看与 GitHub 发布入口，不提供完整业务操作面板。
 - GitHub 发布 v1 当前只支持当前已登录个人账号名下仓库，不支持组织仓库。
 - GitHub 发布 v1 当前要求用户显式提供 commit message，并在预览后确认。
 - GitHub 发布 v1 当前不处理非空远端自动合并、pull、rebase、force push、子模块或 LFS。
@@ -488,7 +510,7 @@ auth_status_overview()
   - `mcp_servers.service-auth-gateway`
 - 当前需要注意：
   - `C:\Users\86175\.codex\config.toml` 里的全局 `service-auth-gateway` 仍指向旧路径 `D:\project\CodexWorkSpace\2026-04-29-login\...`
-  - 这属于用户环境现状，不应误写为当前仓库内配置已自动切到 `2026-04-29-login-business`
+  - 这属于用户环境现状，不应误写为当前仓库内配置已自动切到 `2026-04-29-login-experience`
 
 这表示：
 

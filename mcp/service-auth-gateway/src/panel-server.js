@@ -114,6 +114,10 @@ function pageTemplate(panelToken) {
       background: rgba(29,111,95,0.12);
       color: var(--accent);
     }
+    .pill.source {
+      background: rgba(211,111,61,0.14);
+      color: var(--accent-2);
+    }
     .actions {
       display: flex;
       flex-wrap: wrap;
@@ -157,10 +161,48 @@ function pageTemplate(panelToken) {
       gap: 10px;
       color: var(--text);
     }
+    .confirm-box {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px 16px;
+      background: rgba(255,255,255,0.72);
+    }
+    .confirm-check {
+      align-items: flex-start;
+      gap: 12px;
+      cursor: pointer;
+    }
+    .confirm-check input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin: 2px 0 0;
+      flex: 0 0 auto;
+    }
+    .confirm-copy {
+      display: grid;
+      gap: 4px;
+    }
+    .confirm-title {
+      color: var(--text);
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1.4;
+    }
+    .confirm-note {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
     .meta, .note {
       color: var(--muted);
       font-size: 14px;
       line-height: 1.5;
+    }
+    .field-note {
+      padding-left: 10px;
+      border-left: 3px solid rgba(211,111,61,0.42);
+      color: #5f6e68;
+      font-size: 13px;
     }
     .result {
       white-space: pre-wrap;
@@ -179,11 +221,11 @@ function pageTemplate(panelToken) {
     <section class="hero">
       <h1>统一登录与发布面板</h1>
       <p>当前面板覆盖登录状态查看、GitHub 校验与注销，以及当前项目发布到 GitHub 的预览和执行入口。</p>
-      <div class="note">当前 panel token 仅用于本地 API 防护，不代表官方插件登录态。面板只访问本地网关。</div>
     </section>
     <div class="grid">
       <section class="card">
         <h2>登录总览</h2>
+        <div class="meta">页面会先展示本地状态摘要，再自动完成 GitHub 与 Gmail 在线校验。</div>
         <div id="statusList" class="status-list"></div>
       </section>
       <section class="card">
@@ -195,19 +237,25 @@ function pageTemplate(panelToken) {
           <label>GitHub 仓库链接
             <input name="repositoryUrl" required placeholder="https://github.com/<owner>/<repo>">
           </label>
-          <label>首次 commit message
+          <label>Git 提交说明（Commit Message）
             <textarea name="commitMessage" required></textarea>
           </label>
+          <div class="meta field-note">注：这会作为本次 git commit 的提交信息写入历史，不是 GitHub 发布备注。</div>
           <label id="visibilityWrap" class="hidden">仓库可见性
             <select name="visibility">
               <option value="private">private</option>
               <option value="public">public</option>
             </select>
           </label>
-          <label class="inline">
-            <input type="checkbox" name="confirmStagePreview">
-            我已确认待提交预览无误
-          </label>
+          <div class="confirm-box">
+            <label class="inline confirm-check">
+              <input type="checkbox" name="confirmStagePreview">
+              <span class="confirm-copy">
+                <span class="confirm-title">我已确认待提交预览无误</span>
+                <span class="confirm-note">执行发布前，请先完成一次预览发布并核对待提交内容。</span>
+              </span>
+            </label>
+          </div>
           <div class="actions">
             <button type="submit" data-mode="prepare">预览发布</button>
             <button type="submit" data-mode="execute">执行发布</button>
@@ -216,8 +264,8 @@ function pageTemplate(panelToken) {
       </section>
     </div>
     <section class="card">
-      <h2>发布预览 / 执行结果</h2>
-      <div id="previewSummary" class="meta">先执行“预览发布”。</div>
+      <h2>待提交文件预览 / 执行结果</h2>
+      <div id="previewSummary" class="meta">预览发布会展示本次准备提交的文件列表（非目录树）。</div>
       <div id="previewList" class="preview-list"></div>
       <div id="result" class="result"></div>
     </section>
@@ -231,6 +279,8 @@ function pageTemplate(panelToken) {
     const form = document.getElementById("publishForm");
     const visibilityWrap = document.getElementById("visibilityWrap");
     let lastPreview = null;
+    let lastStatusCards = [];
+    const refreshingCards = new Set();
 
     async function api(path, options = {}) {
       const response = await fetch(path, {
@@ -248,12 +298,24 @@ function pageTemplate(panelToken) {
       result.textContent = JSON.stringify(data, null, 2);
     }
 
+    function clearPublishResult() {
+      result.textContent = "";
+    }
+
+    function setCardRefreshing(cardId, refreshing) {
+      if (refreshing) {
+        refreshingCards.add(cardId);
+        return;
+      }
+      refreshingCards.delete(cardId);
+    }
+
     function renderPreview(data) {
       previewList.innerHTML = "";
       const files = data?.preview?.files || [];
       previewSummary.textContent = files.length
         ? \`共 \${files.length} 项待提交变更。\`
-        : (data?.message || "当前没有待提交内容。");
+        : "当前没有待提交的文件变更。";
       for (const item of files) {
         const div = document.createElement("div");
         div.className = "preview-item";
@@ -265,33 +327,54 @@ function pageTemplate(panelToken) {
       renderResult(data);
     }
 
+    function updatePreviewFromResult(data) {
+      if (!data?.preview) {
+        return;
+      }
+      previewList.innerHTML = "";
+      const files = data.preview.files || [];
+      previewSummary.textContent = files.length
+        ? \`共 \${files.length} 项待提交变更。\`
+        : "当前没有待提交的文件变更。";
+      for (const item of files) {
+        const div = document.createElement("div");
+        div.className = "preview-item";
+        div.textContent = \`\${item.status}  \${item.path}\`;
+        previewList.appendChild(div);
+      }
+      visibilityWrap.classList.toggle("hidden", !data?.requiredInputs?.visibility);
+      lastPreview = data;
+    }
+
     function makeStatusItem(item) {
       const wrapper = document.createElement("div");
       wrapper.className = "status-item";
+      const accountLine = item.accountLabel
+        ? '<div class="meta">' + item.accountLabelTitle + '：' + item.accountLabel + "</div>"
+        : "";
       wrapper.innerHTML = \`
         <div class="status-head">
-          <strong>\${item.provider}</strong>
-          <span class="pill">\${item.state}</span>
+          <strong>\${item.title}</strong>
+          <div class="actions">
+            <span class="pill">\${item.stateLabel}</span>
+            <span class="pill source">\${item.statusSourceLabel}</span>
+          </div>
         </div>
-        <div class="meta">账号：\${item.accountLabel || "未记录"}</div>
+        \${accountLine}
         <div class="meta">上次校验：\${item.lastValidatedAt || "未校验"}</div>
-        <div class="meta">下一步：\${item.nextAction}</div>
-        <div class="meta">\${item.message}</div>
+        <div class="meta">\${refreshingCards.has(item.id) ? "正在在线校验..." : item.message}</div>
       \`;
-      if (item.provider === "github") {
-        const actions = document.createElement("div");
-        actions.className = "actions";
-        const validate = document.createElement("button");
-        validate.className = "secondary";
-        validate.textContent = "重新校验";
-        validate.onclick = async () => {
-          const payload = await api("/api/auth/validate", {
-            method: "POST",
-            body: JSON.stringify({ provider: "github" }),
-          });
-          renderResult(payload);
-          await loadStatuses();
-        };
+      const actions = document.createElement("div");
+      actions.className = "actions";
+      const refresh = document.createElement("button");
+      refresh.className = "secondary";
+      refresh.textContent = refreshingCards.has(item.id) ? "刷新中..." : "刷新状态";
+      refresh.disabled = refreshingCards.has(item.id);
+      refresh.onclick = async () => {
+        await refreshCard(item.id);
+      };
+      actions.appendChild(refresh);
+      if (item.id === "github") {
         const logout = document.createElement("button");
         logout.className = "danger";
         logout.textContent = "注销";
@@ -300,22 +383,48 @@ function pageTemplate(panelToken) {
             method: "POST",
             body: JSON.stringify({ provider: "github" }),
           });
-          renderResult(payload);
-          await loadStatuses();
+          clearPublishResult();
+          await loadStatusCards();
         };
-        actions.append(validate, logout);
-        wrapper.appendChild(actions);
+        actions.appendChild(logout);
       }
+      wrapper.appendChild(actions);
       return wrapper;
     }
 
-    async function loadStatuses() {
-      const data = await api("/api/status-overview", { method: "GET" });
+    function renderStatuses(cards) {
       statusList.innerHTML = "";
-      for (const item of data.summary || []) {
+      for (const item of cards || []) {
         statusList.appendChild(makeStatusItem(item));
       }
-      renderResult(data);
+    }
+
+    function updateCard(card) {
+      lastStatusCards = lastStatusCards.map((item) => (item.id === card.id ? card : item));
+      setCardRefreshing(card.id, false);
+      renderStatuses(lastStatusCards);
+    }
+
+    async function loadStatusCards() {
+      const data = await api("/api/status-cards", { method: "POST" });
+      lastStatusCards = data.cards || [];
+      renderStatuses(lastStatusCards);
+      return data;
+    }
+
+    async function refreshCard(cardId) {
+      setCardRefreshing(cardId, true);
+      renderStatuses(lastStatusCards);
+      const data = await api("/api/status-cards/refresh", {
+        method: "POST",
+        body: JSON.stringify({ cardId }),
+      });
+      updateCard(data.card || data);
+      return data;
+    }
+
+    async function autoRefreshCards() {
+      await Promise.all((lastStatusCards || []).map((item) => refreshCard(item.id)));
     }
 
     form.addEventListener("submit", async (event) => {
@@ -345,15 +454,16 @@ function pageTemplate(panelToken) {
         body: JSON.stringify(payload),
       });
       renderResult(data);
-      if (data.preview) {
-        renderPreview(data);
-      }
-      await loadStatuses();
+      updatePreviewFromResult(data);
+      await loadStatusCards();
     });
 
-    loadStatuses().catch((error) => {
-      result.textContent = error.message;
-    });
+    loadStatusCards()
+      .then(() => autoRefreshCards())
+      .catch((error) => {
+        previewSummary.textContent = "登录状态加载失败，请稍后重试。";
+        result.textContent = error.message;
+      });
   </script>
 </body>
 </html>`;
@@ -388,6 +498,16 @@ async function routeApi(req, res, url, handlers, panelToken) {
     return;
   }
   try {
+    if (req.method === "POST" && url.pathname === "/api/status-cards") {
+      json(res, 200, await handlers.authStatusCards());
+      return;
+    }
+    if (req.method === "POST" && url.pathname === "/api/status-cards/refresh") {
+      json(res, 200, {
+        card: await handlers.authRefreshStatusCard(await readJsonBody(req)),
+      });
+      return;
+    }
     if (req.method === "GET" && url.pathname === "/api/status-overview") {
       json(res, 200, await handlers.authStatusOverview());
       return;

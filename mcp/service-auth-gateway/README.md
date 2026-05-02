@@ -13,6 +13,7 @@ Local MCP auth gateway prototype for GitHub and Google.
 - GitHub local collaboration write fallback tools
 - GitHub repository-link publish preview and execute flow
 - Visualization-friendly login status summary
+- GitHub / Gmail status cards with per-card online refresh
 - Local HTML panel for auth status and GitHub publish
 - Local state metadata in `data/state.json`
 - Secret storage in Windows Credential Manager during normal runs
@@ -39,7 +40,7 @@ npm run smoke
 
 This project includes a local MCP manifest at:
 
-- [`.mcp.json`](D:/project/CodexWorkSpace/2026-04-29-login-business/mcp/service-auth-gateway/.mcp.json)
+- [`.mcp.json`](D:/project/CodexWorkSpace/2026-04-29-login-experience/mcp/service-auth-gateway/.mcp.json)
 
 Its current command points to the local server entry:
 
@@ -112,6 +113,8 @@ The gateway does not treat local auth as official plugin session takeover. It on
 
 The gateway now provides:
 
+- `auth_status_cards`
+- `auth_refresh_status_card`
 - `github_repository_get`
 - `github_branch_list`
 - `github_pull_request_list`
@@ -165,6 +168,14 @@ ui_open_panel()
 ```
 
 The gateway starts a local `127.0.0.1` panel, returns a URL with a short-lived local panel token, and attempts to open it in `Chrome`.
+
+Current panel behavior:
+
+- shows cached GitHub / Gmail status cards first, then automatically runs online validation
+- allows manual refresh for each card
+- allows GitHub logout only
+- supports GitHub publish preview / execute with a separate result area
+- treats Gmail as local `google + gmail-basic` validation, not as the official Gmail connector login state
 
 ## Notes
 

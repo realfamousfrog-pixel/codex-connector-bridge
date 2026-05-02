@@ -7,9 +7,10 @@
 - `Skill` 更像“做事说明书”
 - `MCP` 更像“可调用的本地工具服务”
 - 这个项目做的事情是：
-  - 用一个统一 `skill` 告诉 Codex 该怎么判断登录问题
+  - 用一个统一 `skill` 告诉 Codex 该怎么判断登录问题和 GitHub 聊天请求
   - 用一个本地 `MCP` 服务真正处理登录状态、登录流程和认证信息
-- 用结构化状态摘要、状态卡片和本地 HTML 面板实现当前阶段的“登录状态可视化”
+  - 用一个本地路由决策接口决定后续应该继续走本地能力，还是切回官方插件
+  - 用结构化状态摘要、状态卡片和本地 HTML 面板实现当前阶段的“登录状态可视化”
 
 简单说，`skill` 负责“会不会做、怎么想、怎么判断”，`MCP` 负责“能不能真的执行”。
 
@@ -235,8 +236,10 @@ auth_status({
 它主要负责“判断”：
 
 - 这是登录问题，还是状态检查问题
+- 这是 GitHub 登录请求，还是 GitHub 仓库 / 分支 / PR / issue / 发布请求
 - 是 GitHub，还是 Google
 - 该走官方插件，还是走本地网关
+- 缺少哪些关键参数需要先补齐
 - 后续应该给下游什么标准结论
 
 ### 2. 下层：本地 MCP 网关
@@ -263,6 +266,10 @@ auth_status({
 - GitHub `manual_token`
 - Google `browser_oauth`
 - Google `manual_refresh_token`
+- 业务路由决策 `auth_resolve_route`
+- GitHub 仓库 / 分支 / PR / issue 只读缺口补全
+- GitHub issue / PR 第一批协作写操作
+- GitHub 聊天统一入口第一阶段
 - 登录状态可视化摘要
 - GitHub / Gmail 状态卡
 - 本地 HTML 面板 `ui_open_panel`
@@ -270,9 +277,10 @@ auth_status({
 当前未实现：
 
 - 官方 `@gmail/@github` 入口接管
-- Gmail 发信/读信
-- GitHub 仓库/PR/issue 业务操作
-- 更完整桌面级交互面板
+- 在本地 MCP 中直接实现 Gmail 发信/读信
+- 在本地 MCP 中直接实现 GitHub 标签修改、merge、release 等更完整写操作
+- Google 业务聊天入口统一
+- 面板内直接发起 GitHub / Gmail 登录
 
 ---
 

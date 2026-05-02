@@ -130,6 +130,185 @@ const tools = [
     },
   },
   {
+    name: "auth_resolve_route",
+    description:
+      "Resolve whether a request should use local auth tools, local publish flow, or the official connector after auth is ready.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        provider: { type: "string", enum: ["github", "google"] },
+        intent: {
+          type: "string",
+          enum: ["login", "status", "validate", "logout", "publish", "business_operation"],
+        },
+        capabilityBundle: {
+          type: "string",
+          enum: ["github-basic", "gmail-basic", "drive-basic"],
+        },
+        operationName: { type: "string" },
+        repositoryUrl: { type: "string" },
+      },
+      required: ["provider", "intent"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "github_repository_get",
+    description: "Read GitHub repository details through the local auth gateway.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        repositoryUrl: { type: "string" },
+      },
+      required: ["repositoryUrl"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "github_branch_list",
+    description: "List repository branches through the local auth gateway.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        repositoryUrl: { type: "string" },
+        limit: { type: "integer", minimum: 1, maximum: 100 },
+      },
+      required: ["repositoryUrl"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "github_pull_request_list",
+    description: "List pull requests through the local auth gateway.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        repositoryUrl: { type: "string" },
+        state: { type: "string", enum: ["open", "closed", "all"] },
+        limit: { type: "integer", minimum: 1, maximum: 100 },
+      },
+      required: ["repositoryUrl"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "github_pull_request_get",
+    description: "Read a pull request through the local auth gateway.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        repositoryUrl: { type: "string" },
+        pullNumber: { type: "integer", minimum: 1 },
+      },
+      required: ["repositoryUrl", "pullNumber"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "github_issue_list",
+    description: "List issues through the local auth gateway.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        repositoryUrl: { type: "string" },
+        state: { type: "string", enum: ["open", "closed", "all"] },
+        limit: { type: "integer", minimum: 1, maximum: 100 },
+      },
+      required: ["repositoryUrl"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "github_issue_get",
+    description: "Read an issue through the local auth gateway.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        repositoryUrl: { type: "string" },
+        issueNumber: { type: "integer", minimum: 1 },
+      },
+      required: ["repositoryUrl", "issueNumber"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "github_issue_create",
+    description: "Create an issue through the local auth gateway.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        repositoryUrl: { type: "string" },
+        title: { type: "string" },
+        body: { type: "string" },
+        confirm: { type: "boolean" },
+      },
+      required: ["repositoryUrl", "title", "confirm"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "github_issue_comment_create",
+    description: "Create an issue comment through the local auth gateway.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        repositoryUrl: { type: "string" },
+        issueNumber: { type: "integer", minimum: 1 },
+        body: { type: "string" },
+        confirm: { type: "boolean" },
+      },
+      required: ["repositoryUrl", "issueNumber", "body", "confirm"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "github_pull_request_create",
+    description: "Create a pull request through the local auth gateway.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        repositoryUrl: { type: "string" },
+        title: { type: "string" },
+        body: { type: "string" },
+        head: { type: "string" },
+        base: { type: "string" },
+        confirm: { type: "boolean" },
+      },
+      required: ["repositoryUrl", "title", "head", "base", "confirm"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "github_pull_request_comment_create",
+    description: "Create a pull request comment through the local auth gateway.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        repositoryUrl: { type: "string" },
+        pullNumber: { type: "integer", minimum: 1 },
+        body: { type: "string" },
+        confirm: { type: "boolean" },
+      },
+      required: ["repositoryUrl", "pullNumber", "body", "confirm"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "github_pull_request_review_create",
+    description: "Create a comment-only pull request review through the local auth gateway.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        repositoryUrl: { type: "string" },
+        pullNumber: { type: "integer", minimum: 1 },
+        body: { type: "string" },
+        confirm: { type: "boolean" },
+      },
+      required: ["repositoryUrl", "pullNumber", "body", "confirm"],
+      additionalProperties: false,
+    },
+  },
+  {
     name: "github_publish_prepare",
     description: "Prepare a GitHub publish operation for the current local project.",
     inputSchema: {

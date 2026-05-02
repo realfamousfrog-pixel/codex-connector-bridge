@@ -32,10 +32,15 @@
 - 运行测试和 smoke test
 - 查看 provider 列表
 - 查看登录状态摘要
-- 查看 GitHub / Gmail 状态卡
-- 对单张状态卡执行在线校验
 - 查看单个 provider 状态
+- 查看业务请求应该走本地网关还是官方插件
 - GitHub `manual_token` 登录
+- GitHub 仓库信息读取
+- GitHub 分支列表读取
+- GitHub PR 列表 / 详情读取
+- GitHub issue 列表 / 详情读取
+- GitHub issue 创建 / 评论创建
+- GitHub PR 创建 / 通用评论创建 / 评论型 review 创建
 - GitHub 仓库链接发布预览
 - GitHub 仓库链接发布执行
 - Google `browser_oauth` 登录
@@ -54,9 +59,9 @@
 当前未实现：
 
 - 官方 `@gmail/@github` 入口接管
-- Gmail 发信/读信
-- GitHub 仓库/PR/issue 等更完整业务操作
-- 更接近官方插件的输入框级统一体验
+- 在本地 MCP 中直接实现 Gmail 发信/读信
+- 在本地 MCP 中直接实现 GitHub 标签修改、merge、approve / request changes、release 等更完整写操作
+- Google 业务聊天入口统一
 
 当前接入现状：
 
@@ -92,14 +97,172 @@ Google OAuth 默认支持：
 
 ### 当前能力边界
 
-本项目当前是“统一认证层 + 登录状态可视化原型”，不是完整业务客户端。
+本项目当前是“统一认证层 + GitHub 聊天统一入口第一阶段 + 登录状态可视化原型”，不是完整业务客户端。
 
 这意味着：
 
 - 现在可以做登录、状态查看、状态校验、注销
+- 现在可以做“业务请求该走本地还是官方”的路由判断
+- 现在可以做 GitHub 缺口补全 V1 的只读业务操作
+- 现在可以做 GitHub 第一批协作写操作：issue / PR 创建与评论
 - 现在可以做 GitHub 最小发布链路：仓库链接预览、自动建个人仓、commit、push
-- 现在不能直接发 Gmail 邮件
-- 现在还不能直接做 GitHub PR / issue / 分支等更完整仓库操作
+- 现在可以通过 `service-auth-router` 统一接收 GitHub 自然语言请求，并按“先补参数、再判路由、写前确认”执行
+- 对于 GitHub 仓库 / PR / issue 协作操作，当前采用官方优先、不可依赖时回退本地
+- 现在不会在本地 MCP 中直接发 Gmail 邮件
+- 现在不会在本地 MCP 中直接做 GitHub 标签修改、merge、release 等更完整写操作
+
+### GitHub 聊天统一入口
+
+当前 GitHub 统一聊天入口固定为：
+
+- `skill/service-auth-router`
+
+当前已统一覆盖：
+
+- login
+- status
+- validate
+- logout
+- repository read
+- branch read
+- pull request read
+- issue read
+- issue collaboration write
+- pull request collaboration write
+- current-project publish
+
+当前交互规则：
+
+- 先识别 GitHub 意图
+- 再补齐关键参数
+- 再调用 `auth_resolve_route`
+- 若走本地写操作或发布执行，先输出执行摘要并等待确认
+
+当前关键参数要求：
+
+- GitHub 业务操作本地回退统一优先需要 `repositoryUrl`
+- 发布统一需要 `projectPath`、`repositoryUrl`、`commitMessage`
+- 写操作统一需要 issue / PR 编号、标题、正文、分支等必要参数
+
+### 聊天层执行规则
+
+当前统一聊天入口按以下规则执行：
+
+- 登录、状态查看、校验、注销：
+  - 直接走本地网关
+- GitHub 读操作：
+  - 参数齐全且路由明确后可直接执行
+- GitHub 本地写操作：
+  - 必须先输出执行摘要
+  - 用户确认后才调用本地写工具
+- GitHub 发布：
+  - 必须先执行 `github_publish_prepare`
+  - 用户确认预览后才调用 `github_publish_execute`
+
+执行摘要至少应包含：
+
+- 目标仓库
+- 目标对象
+- 即将执行的动作
+- 当前为何走本地或官方路径
+- 用户确认后才会调用的工具名
+
+### 聊天层验收示例矩阵
+
+以下示例矩阵用于收口第二步聊天入口行为，不代表官方 `@github` 已被接管。
+
+#### 登录类
+
+- 输入：`登录 GitHub`
+  - 预期：走本地登录入口，提示开始 `manual_token` 流程
+- 输入：`看看 GitHub 登没登录`
+  - 预期：先看 `auth_status_overview()`，必要时再看 `auth_status({ provider: "github" })`
+- 输入：`校验 GitHub token`
+  - 预期：调用 `auth_validate({ provider: "github" })`
+- 输入：`注销 GitHub`
+  - 预期：调用 `auth_logout({ provider: "github" })`
+
+#### 读操作类
+
+- 输入：`看看这个仓库`
+  - 缺 `repositoryUrl` 时：先追问仓库链接
+  - 参数齐全时：先判 `auth_resolve_route`，再执行读操作或给官方建议
+- 输入：`列出这个仓库的分支`
+  - 预期：`repositoryUrl` 齐全后先判路由，再读分支列表
+- 输入：`看这个 PR`
+  - 缺 `pullNumber` 或 `repositoryUrl` 时：先补参数
+- 输入：`看这个 issue`
+  - 缺 `issueNumber` 或 `repositoryUrl` 时：先补参数
+
+#### 写操作类
+
+- 输入：`帮我创建 issue`
+  - 预期：先补 `repositoryUrl`、标题、正文
+  - 若走本地：先停在确认摘要，再调 `github_issue_create`
+- 输入：`帮我评论这个 issue`
+  - 预期：先补 `repositoryUrl`、`issueNumber`、正文
+  - 若走本地：先停在确认摘要，再调 `github_issue_comment_create`
+- 输入：`帮我创建 PR`
+  - 预期：先补 `repositoryUrl`、`head`、`base`、标题、正文
+  - 若走本地：先停在确认摘要，再调 `github_pull_request_create`
+- 输入：`帮我评论这个 PR`
+  - 预期：先补 `repositoryUrl`、`pullNumber`、正文
+  - 若走本地：先停在确认摘要，再调 `github_pull_request_comment_create`
+- 输入：`给这个 PR 提 review comment`
+  - 预期：先补 `repositoryUrl`、`pullNumber`、正文
+  - 若走本地：先停在确认摘要，再调 `github_pull_request_review_create`
+
+#### 发布类
+
+- 输入：`把当前项目推到这个仓库`
+  - 缺 `repositoryUrl` 时：先追问
+  - 缺 `commitMessage` 时：先追问
+  - 参数齐全时：先走 `github_publish_prepare`
+  - 预览通过后：先展示发布摘要，再等待确认
+
+#### 阻塞类
+
+- 未登录时：
+  - 预期返回 `github_auth_required`
+  - 同时给出重新登录步骤
+- scope 不足时：
+  - 预期返回 `github_scope_missing`
+  - 同时明确需要更换具备 `repo` 或 `public_repo` 的 token
+- route 结果为官方路径时：
+  - 只给官方执行建议
+  - 不伪装成已经由本地执行
+- route 结果为本地路径时：
+  - 明确将调用的本地工具名
+
+### 当前推进顺序
+
+当前固定推进顺序如下：
+
+1. 先收口 GitHub MCP 业务底座
+2. 再收口 GitHub 聊天统一入口第一阶段
+3. 最后再判断是否可以提交主线
+
+这里的“可以提交主线”不等于：
+
+- 只是文档已经写完
+- 只是 skill 已能统一描述
+- 只是聊天窗口看起来能统一接话
+
+只有在 MCP 能力、测试、聊天层交互规则和文档边界都收口后，才可进入主线提交判断。
+
+### 主线提交判断
+
+主线提交判断以 `PROJECT_CONTEXT.md` 为第一真相源。
+
+当前必须至少满足：
+
+- `npm test` 通过
+- `npm run smoke` 通过
+- GitHub 路由决策、读操作、第一批协作写操作、发布链路测试通过
+- `service-auth-router` 已固定第一阶段统一范围
+- 文档已明确当前未达到官方 `@github` 插件同等效果
+
+当主文档状态变为 `ready_for_mainline` 时，才表示可以开始主线检查与提交。
 
 ## 快速导航
 
@@ -252,6 +415,221 @@ auth_status_overview()
 - 如果要看某个 provider 的详细信息，继续执行“查看单个 provider 状态”
 - 如果状态提示需要重新登录，进入对应登录章节
 
+### 查看业务操作路由决策
+
+#### 前提
+
+- MCP 服务已可调用
+
+#### 步骤
+
+查看 GitHub 业务请求：
+
+```text
+auth_resolve_route({
+  provider: "github",
+  intent: "business_operation",
+  capabilityBundle: "github-basic",
+  operationName: "pull_request_list",
+  repositoryUrl: "https://github.com/<owner>/<repo>"
+})
+```
+
+查看 Google Drive 业务请求：
+
+```text
+auth_resolve_route({
+  provider: "google",
+  intent: "business_operation",
+  capabilityBundle: "drive-basic",
+  operationName: "open_drive_file"
+})
+```
+
+查看当前项目 GitHub 发布：
+
+```text
+auth_resolve_route({
+  provider: "github",
+  intent: "publish"
+})
+```
+
+#### 结果
+
+会返回：
+
+- 当前目标 provider
+- 所需 capability bundle
+- 当前本地登录状态
+- 应该走 `use_local_auth_gateway`、`use_official_connector` 还是 `auth_blocked_with_reason`
+- 下一步应该先登录、先校验，还是直接切到官方插件
+
+#### 当前规则
+
+- 登录、状态查看、校验、注销：
+  - 走本地网关
+- GitHub 当前项目发布：
+  - 走本地网关
+- GitHub 仓库 / 分支 / PR / issue 读操作：
+  - 官方可依赖时优先官方 `@github`
+  - 官方在当前环境不可依赖时回退本地 GitHub 工具
+- GitHub issue / PR 协作写操作：
+  - 官方可依赖时优先官方 `@github`
+  - 官方在当前环境不可依赖时回退本地 GitHub 工具
+- Gmail / Drive / Docs / Sheets / Slides 等业务操作：
+  - 本地认证满足后优先走官方 `@gmail` 或 `@google-drive`
+
+#### 聊天层约束
+
+- GitHub 业务请求应先经过聊天层参数补齐，不应在缺关键参数时直接调用本地工具
+- GitHub 本地读操作在参数齐全后可直接执行
+- GitHub 本地写操作和发布执行必须先经过聊天层统一二次确认
+- 工具级 `confirm=true` 仍需要保留，但它不是用户主交互入口
+
+### GitHub 只读业务操作
+
+#### 适用范围
+
+- 当前这一节只覆盖 GitHub 只读操作
+- `repositoryUrl` 当前必填
+
+#### 仓库信息
+
+```text
+github_repository_get({
+  repositoryUrl: "https://github.com/<owner>/<repo>"
+})
+```
+
+#### 分支列表
+
+```text
+github_branch_list({
+  repositoryUrl: "https://github.com/<owner>/<repo>",
+  limit: 20
+})
+```
+
+#### PR 列表
+
+```text
+github_pull_request_list({
+  repositoryUrl: "https://github.com/<owner>/<repo>",
+  state: "open",
+  limit: 20
+})
+```
+
+#### PR 详情
+
+```text
+github_pull_request_get({
+  repositoryUrl: "https://github.com/<owner>/<repo>",
+  pullNumber: 12
+})
+```
+
+#### issue 列表
+
+```text
+github_issue_list({
+  repositoryUrl: "https://github.com/<owner>/<repo>",
+  state: "open",
+  limit: 20
+})
+```
+
+#### issue 详情
+
+```text
+github_issue_get({
+  repositoryUrl: "https://github.com/<owner>/<repo>",
+  issueNumber: 7
+})
+```
+
+#### 返回特点
+
+- 统一使用本地 GitHub token
+- 未登录时返回阻塞结果
+- 仓库不存在、PR 不存在、issue 不存在会返回明确原因
+- issue 列表会自动过滤 PR 镜像项
+
+### GitHub 协作写操作
+
+#### 适用范围
+
+- 当前第一批只覆盖 issue / PR 创建与评论协作
+- `repositoryUrl` 当前必填
+- 写操作当前必须传 `confirm: true`
+- 本地 token 当前需要具备 `repo` 或 `public_repo`
+- PR review 当前只支持评论型 `COMMENT`
+
+#### issue 创建
+
+```text
+github_issue_create({
+  repositoryUrl: "https://github.com/<owner>/<repo>",
+  title: "Issue title",
+  body: "Issue body",
+  confirm: true
+})
+```
+
+#### issue 评论创建
+
+```text
+github_issue_comment_create({
+  repositoryUrl: "https://github.com/<owner>/<repo>",
+  issueNumber: 7,
+  body: "Issue comment",
+  confirm: true
+})
+```
+
+#### PR 创建
+
+```text
+github_pull_request_create({
+  repositoryUrl: "https://github.com/<owner>/<repo>",
+  title: "PR title",
+  body: "PR body",
+  head: "feature/login",
+  base: "main",
+  confirm: true
+})
+```
+
+#### PR 通用评论创建
+
+```text
+github_pull_request_comment_create({
+  repositoryUrl: "https://github.com/<owner>/<repo>",
+  pullNumber: 12,
+  body: "PR comment",
+  confirm: true
+})
+```
+
+#### PR 评论型 review 创建
+
+```text
+github_pull_request_review_create({
+  repositoryUrl: "https://github.com/<owner>/<repo>",
+  pullNumber: 12,
+  body: "Review comment",
+  confirm: true
+})
+```
+
+#### 返回特点
+
+- 官方 GitHub connector 不可依赖时，可走本地回退
+- scope 不足时会返回 `github_scope_missing`
+- 仓库、issue、PR 不存在会返回明确阻塞原因
+- 403 / 422 会映射为稳定的本地阻塞结果
+
 ### 打开本地 HTML 面板
 
 #### 前提
@@ -283,11 +661,6 @@ ui_open_panel()
 - 填写仓库链接、commit message 并执行 GitHub 发布预览 / 发布
 - 预览区显示待提交文件扁平列表，执行后结果区会继续显示发布结果或阻塞原因
 
-#### 当前面板边界
-
-- 面板当前只覆盖本地认证状态查看与 GitHub 发布，不是完整业务客户端
-- Gmail 卡片只是 `google + gmail-basic` 的本地在线校验，不代表官方 Gmail connector 登录态
-
 ### 查看登录状态卡
 
 #### 前提
@@ -314,11 +687,6 @@ auth_refresh_status_card({ cardId: "gmail" })
 - 返回 GitHub / Gmail 两张体验层状态卡
 - 区分当前是本地缓存摘要还是已完成在线校验
 - 用中文用户态文案显示状态、账号和下一步动作
-
-#### 下一步
-
-- 如果要查看更通用的 provider 摘要，继续执行“查看登录状态摘要”
-- 如果要查某个 provider 的完整状态，继续执行“查看单个 provider 状态”
 
 ### GitHub 仓库链接发布
 
@@ -662,8 +1030,6 @@ auth_logout({ provider: "google" })
   - 本地 secret 已存在，但还没有恢复成完整状态；可以继续校验恢复
 - `authenticated`
   - 当前已校验且可用
-- `reauth_required`
-  - 当前 provider 已有登录信息，但缺少当前能力所需 bundle，需要重新授权
 - `expired`
   - 登录信息存在，但已过期或 refresh 失败
 - `invalid`
@@ -823,14 +1189,21 @@ auth_validate({ provider: "..." })
 
 当前已实现：
 
+- 业务操作路由决策 `auth_resolve_route`
+- 仓库信息读取
+- 分支列表读取
+- PR 列表 / 详情读取
+- issue 列表 / 详情读取
+- issue 创建 / 评论创建
+- PR 创建 / 通用评论创建 / 评论型 review 创建
 - 仓库链接发布预览
 - 仓库自动创建、commit、push
 
 后续待补充：
 
-- 仓库信息读取
-- 分支查看
-- PR / issue 等操作
+- GitHub 标签修改、merge、approve / request changes、release 等后续写操作
+- 更细的 route intent
+- Google 业务层缺口补全
 
 ### 登录状态可视化面板
 

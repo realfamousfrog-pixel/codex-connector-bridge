@@ -151,7 +151,12 @@
 - 查看登录状态摘要
 - 查看 GitHub / Gmail 状态卡
 - 对单张状态卡执行在线校验
+- 查看业务请求路由决策
+- GitHub 聊天统一入口第一阶段
 - GitHub `manual_token` 登录
+- GitHub 仓库信息 / 分支 / PR / issue 只读操作
+- GitHub issue / PR 第一批协作写操作
+- GitHub 仓库链接发布预览 / 执行
 - Google `browser_oauth` / `manual_refresh_token` 登录
 - 状态校验与注销
 - 本地 HTML 面板 `ui_open_panel`
@@ -159,6 +164,9 @@
 ### 当前未实现
 
 - 官方 `@gmail/@github` 入口接管
-- Gmail 发信/读信
-- GitHub 仓库/PR/issue 业务操作
+- 在本地 MCP 中直接实现 Gmail 发信/读信
+- 在本地 MCP 中直接实现 GitHub 标签修改、merge、release 等更完整写操作
+- Google 业务聊天入口统一
+- 面板内直接发起 GitHub / Gmail 登录
+- 面板内 Gmail 注销
 - 更完整桌面级交互面板

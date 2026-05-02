@@ -8,6 +8,9 @@ Local MCP auth gateway prototype for GitHub and Google.
 - Google browser OAuth with local loopback callback capture
 - Google manual refresh-token flow
 - GitHub manual token validation
+- Route resolution between local auth, local publish, and official connectors
+- GitHub local read-operation fallback tools
+- GitHub local collaboration write fallback tools
 - GitHub repository-link publish preview and execute flow
 - Visualization-friendly login status summary
 - GitHub / Gmail status cards with per-card online refresh
@@ -89,6 +92,73 @@ This project includes a local manifest for project-scoped registration. In the c
    - optional `createRepository=true`
 5. The gateway will create the personal repository when allowed, initialize git if needed, add a clean HTTPS `origin`, commit, and push.
 
+## Route Resolution
+
+Use:
+
+```text
+auth_resolve_route(...)
+```
+
+This tool is intended for the business-operation layer:
+
+- login, status, validate, and logout stay on the local gateway
+- current-project GitHub publish stays on the local gateway
+- GitHub repo / branch / PR / issue collaboration requests should prefer the official `@github` connector when it is reliable in the current environment, otherwise fall back to local GitHub tools
+- Gmail / Drive-family business requests should prefer `@gmail` or `@google-drive` after local auth is confirmed
+
+The gateway does not treat local auth as official plugin session takeover. It only returns the route decision and the next action.
+
+## GitHub Local Fallback Tools
+
+The gateway now provides:
+
+- `auth_status_cards`
+- `auth_refresh_status_card`
+- `github_repository_get`
+- `github_branch_list`
+- `github_pull_request_list`
+- `github_pull_request_get`
+- `github_issue_list`
+- `github_issue_get`
+- `github_issue_create`
+- `github_issue_comment_create`
+- `github_pull_request_create`
+- `github_pull_request_comment_create`
+- `github_pull_request_review_create`
+
+This V1 surface is intentionally fixed for the current stabilization stage:
+
+- `auth_resolve_route` is the only business-route entry for the chat layer
+- local GitHub fallback only covers:
+  - repository / branch / pull request / issue read operations
+  - the first collaboration write batch for issue / pull request
+  - current-project publish
+- this stage does not add labels, merge, approve or request changes, release, Pages, or Actions tools
+
+These tools:
+
+- require `repositoryUrl`
+- use the current local GitHub token
+- use `confirm=true` for local write execution
+- require `repo` or `public_repo` for local write execution
+- cover GitHub business gaps when the official plugin cannot be relied on because of missing login or missing tool exposure in the current environment
+
+Stable blocked or validation outcomes in V1 include:
+
+- `github_auth_required`
+- `github_scope_missing`
+- `repository_not_found`
+- `issue_not_found`
+- `pull_request_not_found`
+- `github_repo_access_denied`
+- write-validation failures such as:
+  - `issue_create_invalid`
+  - `issue_comment_create_invalid`
+  - `pull_request_create_invalid`
+  - `pull_request_comment_create_invalid`
+  - `pull_request_review_create_invalid`
+
 ## Local Panel
 
 Use:
@@ -101,11 +171,11 @@ The gateway starts a local `127.0.0.1` panel, returns a URL with a short-lived l
 
 Current panel behavior:
 
-- Shows cached GitHub / Gmail status cards first, then automatically runs online validation
-- Allows manual refresh for each card
-- Allows GitHub logout only
-- Supports GitHub publish preview / execute with a separate result area
-- Treats Gmail as local `google + gmail-basic` validation, not as the official Gmail connector login state
+- shows cached GitHub / Gmail status cards first, then automatically runs online validation
+- allows manual refresh for each card
+- allows GitHub logout only
+- supports GitHub publish preview / execute with a separate result area
+- treats Gmail as local `google + gmail-basic` validation, not as the official Gmail connector login state
 
 ## Notes
 
@@ -113,6 +183,7 @@ Current panel behavior:
 - The repository ships a local `.mcp.json` manifest, but whether it is globally registered depends on the current user's Codex configuration.
 - Test mode uses environment variables instead of Windows Credential Manager.
 - Login status visualization now includes both structured status output and a local HTML panel.
+- Business-operation routing now prefers official connectors where they can be relied on, and falls back to local GitHub read / collaboration write tools for GitHub V1 gap coverage.
 - GitHub publish v1 only supports personal repositories under the currently authenticated user account.
 - GitHub publish v1 does not support organization repositories, force push, or auto-merging non-empty remotes.
 - On some Windows hosts, Google token exchange may fall back to `PowerShell Invoke-WebRequest` when Node `fetch` cannot reach `oauth2.googleapis.com` directly.

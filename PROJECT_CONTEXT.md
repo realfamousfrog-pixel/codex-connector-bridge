@@ -433,11 +433,17 @@ auth_status_overview()
   - 使用环境变量模拟 secret 存储
 - 测试隔离：
   - 自动化测试当前使用独立测试数据目录，不再复用真实 `data/` 目录
+  - 测试侧重置 `state.json` / `sessions.json` 时已改为原子写入，避免测试初始化阶段生成空文件或半写入文件
 - 非敏感状态写入：
   - `mcp/service-auth-gateway/data/state.json`
   - `mcp/service-auth-gateway/data/sessions.json`
 
 状态文件只承担原型调试与流程跟踪用途，不应写入敏感 token 明文。
+当前 `state-store` 已补以下稳定性约束：
+
+- `state.json` / `sessions.json` 写入采用临时文件替换，避免直接覆盖时被读到半写入内容
+- 同进程内对同一状态文件的更新已串行化，避免并发写入互相覆盖或产出损坏 JSON
+- 读取状态文件时，对空文件、缺失文件提供短重试与回退恢复，降低测试阶段 `Unexpected end of JSON input` 的间歇性失败风险
 
 ## 版本控制约束
 

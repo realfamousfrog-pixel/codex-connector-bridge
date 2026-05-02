@@ -11,16 +11,24 @@ const stateFile = path.join(testDataDir, "state.json");
 const sessionsFile = path.join(testDataDir, "sessions.json");
 let cachedModules;
 
+async function writeJsonAtomic(filePath, value) {
+  const tempPath = `${filePath}.${process.pid}.${Date.now()}.tmp`;
+  await fs.writeFile(tempPath, JSON.stringify(value, null, 2), "utf8");
+  await fs.rename(tempPath, filePath);
+}
+
 async function loadModules() {
   if (!cachedModules) {
     cachedModules = Promise.all([
       import("../src/gateway.js"),
       import("../src/loopback-manager.js"),
       import("../src/panel-server.js"),
-    ]).then(([gatewayMod, loopbackMod, panelServerMod]) => ({
+      import("../src/state-store.js"),
+    ]).then(([gatewayMod, loopbackMod, panelServerMod, stateStoreMod]) => ({
       AuthGateway: gatewayMod.AuthGateway,
       closeAllLoopbackServers: loopbackMod.closeAllLoopbackServers,
       closePanelServerAsync: panelServerMod.closePanelServerAsync,
+      stateStore: stateStoreMod,
     }));
   }
   return cachedModules;
@@ -41,8 +49,8 @@ async function closeLoopbackServersForTest() {
 
 async function resetData() {
   await fs.mkdir(testDataDir, { recursive: true });
-  await fs.writeFile(stateFile, JSON.stringify({ providers: {} }, null, 2), "utf8");
-  await fs.writeFile(sessionsFile, JSON.stringify({ sessions: {} }, null, 2), "utf8");
+  await writeJsonAtomic(stateFile, { providers: {} });
+  await writeJsonAtomic(sessionsFile, { sessions: {} });
 }
 
 async function createProjectDir(name) {
@@ -60,6 +68,38 @@ test.beforeEach(async () => {
 
 test.afterEach(() => {
   return closeLoopbackServersForTest();
+});
+
+test("readState recovers from an empty state file by recreating the fallback JSON", async () => {
+  await resetData();
+  cachedModules = null;
+  const { stateStore } = await loadModules();
+  await fs.writeFile(stateFile, "", "utf8");
+
+  const state = await stateStore.readState();
+  assert.deepEqual(state, { providers: {} });
+  assert.deepEqual(JSON.parse(await fs.readFile(stateFile, "utf8")), { providers: {} });
+});
+
+test("setSession serializes concurrent writes so session JSON stays valid", async () => {
+  await resetData();
+  cachedModules = null;
+  const { stateStore } = await loadModules();
+
+  await Promise.all(
+    Array.from({ length: 20 }, (_, index) =>
+      stateStore.setSession(`session-${index}`, {
+        provider: "google",
+        method: "browser_oauth",
+        index,
+      }),
+    ),
+  );
+
+  const sessions = await stateStore.readSessions();
+  assert.equal(Object.keys(sessions.sessions).length, 20);
+  const rawSessions = await fs.readFile(sessionsFile, "utf8");
+  assert.doesNotThrow(() => JSON.parse(rawSessions));
 });
 
 test("auth_list_providers returns github and google in unauthenticated state", async () => {

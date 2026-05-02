@@ -5,7 +5,7 @@
 
 # 项目概况
 
-本项目是一个面向 Codex 本地环境的统一登录原型，目标是在当前 API 路线下，为 `GitHub` 和 `Google` 提供一套可复用的本地认证入口，并用 `skill + MCP` 两层结构统一处理登录状态、登录流程和后续路由决策。
+本项目是一个面向 Codex 本地环境的统一登录原型，目标是在当前 API 路线下，为 `GitHub` 和 `Google` 提供一套可复用的本地认证入口，并用 `skill + MCP` 两层结构统一处理登录状态、登录流程、业务能力缺口补全和后续路由决策。
 
 当前项目不尝试接管或复用官方云端 connector 的内部登录态，而是提供本地可控的替代认证层。
 
@@ -25,6 +25,133 @@
 - 兼容目标：
   - 官方 `@gmail/@github` 入口只作为远期探索方向，不作为当前阶段承诺
 
+## 当前阶段重点
+
+- 当前阶段重点已经从“继续先补底层认证”切换为“先收口 GitHub MCP 业务底座，再收口 GitHub 聊天统一入口”。
+- 第一阶段统一入口继续复用 `skill/service-auth-router/`，不新增并列 GitHub skill。
+- 统一范围当前只覆盖 GitHub：
+  - login
+  - status / validate / logout
+  - repository / branch / PR / issue 读操作
+  - issue / PR 第一批协作写操作
+  - current-project publish
+- 当前阶段不把 Google 业务聊天入口一起并入闭环。
+
+## 当前工作路线
+
+当前固定按以下优先级推进，不倒序执行：
+
+1. 先收口 GitHub MCP 业务底座
+   - 固定 `auth_resolve_route`
+   - 固定 GitHub 读操作本地回退
+   - 固定 GitHub 第一批协作写操作本地回退
+   - 固定 GitHub 发布准备与执行链路
+   - 先把接口、阻塞原因、scope 约束和测试覆盖稳定下来
+2. 再收口 GitHub 聊天统一入口第一阶段
+   - 继续使用 `skill/service-auth-router/`
+   - 固定“先补参数、再判路由、写前确认”的聊天层交互模型
+   - 不把 skill 文案误当成平台级 `@github` 接管
+3. 最后做主线收口
+   - 统一文档边界
+   - 统一主线提交门槛
+   - 检查实现、测试、文档是否一致
+
+当前不采用以下路线：
+
+- 先合聊天层文档，再让主线反向补 MCP 底座
+- 把“skill 已能统一描述”误判成“已经达到官方插件同等效果”
+
+## 主线提交门槛
+
+当前项目只有在以下条件全部满足时，才可标记为“可以提交主线”：
+
+- MCP 新增工具接口已稳定在当前 V1 范围：
+  - `auth_resolve_route`
+  - `github_repository_get`
+  - `github_branch_list`
+  - `github_pull_request_list`
+  - `github_pull_request_get`
+  - `github_issue_list`
+  - `github_issue_get`
+  - `github_issue_create`
+  - `github_issue_comment_create`
+  - `github_pull_request_create`
+  - `github_pull_request_comment_create`
+  - `github_pull_request_review_create`
+  - `github_publish_prepare`
+  - `github_publish_execute`
+- `npm test` 通过
+- `npm run smoke` 通过
+- GitHub 业务层新增测试已覆盖：
+  - 路由决策
+  - GitHub 读操作
+  - GitHub 第一批协作写操作
+  - scope 不足阻塞
+  - 未登录阻塞
+  - 发布仍走本地网关
+- `service-auth-router` 已明确第一阶段统一范围与非目标
+- 主文档、README、操作手册已经同步：
+  - 当前已实现
+  - 当前未实现
+  - 当前统一到哪一层
+  - 当前仍未达到官方 `@github` 插件同等效果
+- 不存在未解释的接口漂移、命名漂移或文档与实现不一致
+
+## 主线准备状态
+
+当前主线准备状态字段固定为以下三种之一：
+
+- `not_ready`
+- `stabilizing`
+- `ready_for_mainline`
+
+当前状态：
+
+- `ready_for_mainline`
+
+状态解释：
+
+- `not_ready`
+  - 关键接口、测试或能力边界仍在明显变动
+- `stabilizing`
+  - 主体能力已基本落地，正在做测试、聊天层、文档和边界收口
+- `ready_for_mainline`
+  - 已满足本节“主线提交门槛”，可以开始并主线检查与提交
+
+只有状态变为 `ready_for_mainline`，才应提醒用户可以提交主线。
+
+## 第二步完成标准
+
+GitHub 聊天统一入口第一阶段只有在以下条件全部满足时，才可视为“第二步完成”：
+
+- `skill/service-auth-router/` 已固定为唯一 GitHub 自然语言入口
+- 不新增并列 GitHub skill
+- 不新增 MCP 工具
+- 不修改当前 GitHub V1 工具 schema
+- 聊天层规则已经固定为：
+  - 先补参数
+  - 再判路由
+  - 写前确认
+- route 输出已经固定为统一契约：
+  - `use_official_connector`
+  - `use_local_auth_gateway`
+  - `auth_blocked_with_reason`
+- `service-auth-router` 已补齐聊天层示例矩阵，至少覆盖：
+  - 登录类
+  - 状态类
+  - GitHub 读操作
+  - GitHub 写操作
+  - publish
+  - 缺参数追问
+  - blocked 恢复
+- 操作手册已明确以下边界：
+  - 哪些请求会直接执行
+  - 哪些请求会先停在确认摘要
+  - 当前仍未达到官方 `@github` 插件同等效果
+- README、主文档、操作手册、skill 说明之间不存在边界冲突或状态倒挂
+- 第二步收口完成后，才可把主线准备状态推进到：
+  - `ready_for_mainline`
+
 ## 环境假设
 
 - 当前用户机器只有 `Chrome`
@@ -37,8 +164,9 @@
 - 当前 Codex 使用 `API` 路线工作，不具备 ChatGPT 云账号 connector 登录能力。
 - 官方 `@gmail`、`@google-drive`、`@github` 插件即使本地已安装，也不等于当前环境下可直接完成登录。
 - 本项目的处理策略是：
-  - 能明确使用官方 connector 的场景，给出 `use_official_connector`
-  - 官方 connector 不可用或不适配当前环境时，转到本地 `service-auth-gateway`
+  - 能明确使用官方 connector 且当前环境可直接完成的场景，给出 `use_official_connector`
+  - 官方 connector 因未登录或当前线程内工具面不可稳定验证而不可依赖时，转到本地 `service-auth-gateway`
+  - 当前发展顺序固定为：先 `GitHub`，后 `Google`
 
 ## 本地统一登录原型现状
 
@@ -56,6 +184,24 @@
   - 通过 GitHub API 校验 token 是否有效
   - 已完成至少一次真实 token 联调并验证可写入本地凭据存储
   - 已修复仅有 secret、缺少 provider state 时 `auth_validate` 无法恢复的问题
+  - 已补业务路由决策接口：
+    - `auth_resolve_route`
+  - 已补 GitHub 缺口补全 V1 只读业务工具：
+    - `github_repository_get`
+    - `github_branch_list`
+    - `github_pull_request_list`
+    - `github_pull_request_get`
+    - `github_issue_list`
+    - `github_issue_get`
+  - 已补 GitHub 第一批协作写操作工具：
+    - `github_issue_create`
+    - `github_issue_comment_create`
+    - `github_pull_request_create`
+    - `github_pull_request_comment_create`
+    - `github_pull_request_review_create`
+  - 对于仓库、PR、issue、CI 等业务操作，当前策略是：
+    - 若官方插件在当前环境可直接完成，则优先官方 `@github`
+    - 若官方插件因未登录或工具面不可稳定验证而不可依赖，则回退到本地 GitHub 业务工具
   - 已实现 GitHub 发布准备与执行原型：
     - `github_publish_prepare`
     - `github_publish_execute`
@@ -68,6 +214,10 @@
   - 项目内联调脚本当前优先显式调用本机 `Chrome`
   - 对 Google token 交换与 refresh，当前已补 Windows PowerShell 网络回退以兼容部分主机上的 Node 连接超时
   - 已完成至少一次真实 `browser_oauth` 联调并验证可写入本地凭据存储
+  - 已补业务路由决策接口：
+    - `auth_resolve_route`
+  - 当前 `Google` 仍处于第二阶段，尚未开始本地业务层缺口补全
+  - 对于 Gmail / Drive / Docs / Sheets / Slides 等业务操作，当前仍优先按官方 `@gmail` / `@google-drive` 判断
   - 登录状态可视化
     - 支持结构化状态摘要输出
   - 本地可视化面板
@@ -89,6 +239,22 @@
 - 当前已实现：
   - GitHub `manual_token` 认证与有效性校验
   - 登录状态查看、校验与本地凭据管理
+  - 面向业务层的本地路由决策：
+    - `auth_resolve_route`
+    - 可区分 login / status / validate / logout / publish / business_operation
+  - GitHub 缺口补全 V1：
+    - 仓库信息读取
+    - 分支列表读取
+    - PR 列表 / 详情读取
+    - issue 列表 / 详情读取
+    - issue 创建
+    - issue 评论创建
+    - PR 创建
+    - PR 通用评论创建
+    - PR 评论型 review 创建
+    - `repositoryUrl` 必填
+    - 写操作要求 `confirm=true`
+    - PR review 第一版仅支持评论型 `COMMENT`
   - 基于仓库链接的 GitHub 发布准备：
     - 校验当前 GitHub 登录
     - 校验仓库 owner 是否属于当前已登录个人账号
@@ -101,13 +267,14 @@
     - 自动绑定干净 HTTPS `origin`
     - 使用用户提供的 commit message 完成 commit 与 push
 - 当前未实现：
-  - 基于已登录状态直接执行 GitHub 仓库、分支、PR、Pages、Actions 等业务操作
+  - 在本地 MCP 内直接执行 GitHub 标签修改、merge、approve / request changes、release 等更完整写操作
+  - 在本地 MCP 内直接执行 GitHub Pages、Actions 等更完整业务 API
   - 组织仓库创建与发布
   - 非空远端自动合并、pull、rebase、force push
   - 仅凭自然语言在输入框中达到官方 `@github` 等效体验
 - 规划中但尚未交付：
-  - 增加 GitHub 业务操作 adapter，补仓库信息读取、分支、PR 与发布结果回显
-  - 在认证层与发布链路稳定后，把更多 GitHub 业务操作纳入统一工作流
+  - 为 GitHub 补更多业务场景下的 route intent 与恢复指引
+  - 在 GitHub 缺口补全稳定后，再进入 Google 业务层补全
 - 远期探索方向：
   - 更接近官方 `@github` 使用体验的一体化发布入口
 
@@ -139,13 +306,24 @@
 
 `skill/service-auth-router/` 负责：
 
-- 识别用户是在请求登录、查看登录状态、推送发布、切换账号、注销，还是在做任务时缺少认证
+- 作为当前项目唯一的 GitHub 自然语言聊天入口
+- 识别用户是在请求登录、查看登录状态、校验、推送发布、切换账号、注销，还是在做仓库 / 分支 / PR / issue 读写操作
 - 识别目标服务是 `github` 还是 `google`
-- 判断走官方 connector 还是本地 `MCP` 网关
+- 对 GitHub 请求先分类意图、再补参数、再判断走官方 connector 还是本地 `MCP` 网关
+- 在本地写操作和发布执行前，先给出聊天层统一二次确认摘要
 - 对下游给出统一结论：
   - `use_official_connector`
   - `use_local_auth_gateway`
   - `auth_blocked_with_reason`
+
+当前 GitHub 聊天层统一规则如下：
+
+- GitHub 业务请求统一先过：
+  - `auth_resolve_route`
+- 缺少关键参数时，先补问，不直接盲调底层工具
+- 本地 GitHub 读操作在参数齐全且路由明确后可直接执行
+- 本地 GitHub 写操作和发布执行必须先经过聊天层统一二次确认
+- 工具级 `confirm=true` 仍保留，但只作为底层保护，不作为主交互心智
 
 ## 本地 MCP 网关
 
@@ -159,6 +337,18 @@
 - `auth_validate`
 - `auth_logout`
 - `auth_capability_matrix`
+- `auth_resolve_route`
+- `github_repository_get`
+- `github_branch_list`
+- `github_pull_request_list`
+- `github_pull_request_get`
+- `github_issue_list`
+- `github_issue_get`
+- `github_issue_create`
+- `github_issue_comment_create`
+- `github_pull_request_create`
+- `github_pull_request_comment_create`
+- `github_pull_request_review_create`
 - `github_publish_prepare`
 - `github_publish_execute`
 - `ui_open_panel`
@@ -179,21 +369,21 @@
 本地运行入口：
 
 ```powershell
-cd D:\project\CodexWorkSpace\2026-04-29-login\mcp\service-auth-gateway
+cd D:\project\CodexWorkSpace\2026-04-29-login-business\mcp\service-auth-gateway
 npm start
 ```
 
 测试命令：
 
 ```powershell
-cd D:\project\CodexWorkSpace\2026-04-29-login\mcp\service-auth-gateway
+cd D:\project\CodexWorkSpace\2026-04-29-login-business\mcp\service-auth-gateway
 npm test
 ```
 
 MCP smoke test：
 
 ```powershell
-cd D:\project\CodexWorkSpace\2026-04-29-login\mcp\service-auth-gateway
+cd D:\project\CodexWorkSpace\2026-04-29-login-business\mcp\service-auth-gateway
 npm run smoke
 ```
 
@@ -243,11 +433,17 @@ auth_status_overview()
   - 使用环境变量模拟 secret 存储
 - 测试隔离：
   - 自动化测试当前使用独立测试数据目录，不再复用真实 `data/` 目录
+  - 测试侧重置 `state.json` / `sessions.json` 时已改为原子写入，避免测试初始化阶段生成空文件或半写入文件
 - 非敏感状态写入：
   - `mcp/service-auth-gateway/data/state.json`
   - `mcp/service-auth-gateway/data/sessions.json`
 
 状态文件只承担原型调试与流程跟踪用途，不应写入敏感 token 明文。
+当前 `state-store` 已补以下稳定性约束：
+
+- `state.json` / `sessions.json` 写入采用临时文件替换，避免直接覆盖时被读到半写入内容
+- 同进程内对同一状态文件的更新已串行化，避免并发写入互相覆盖或产出损坏 JSON
+- 读取状态文件时，对空文件、缺失文件提供短重试与回退恢复，降低测试阶段 `Unexpected end of JSON input` 的间歇性失败风险
 
 ## 版本控制约束
 
@@ -259,11 +455,23 @@ auth_status_overview()
 
 - 本项目当前仍以“项目内原型”为主进行开发和维护，但 `service-auth-gateway` 已接入全局 Codex MCP 配置。
 - 本项目当前仍未实现官方 `@gmail/@github` 入口接管。
-- 当前已实现 GitHub 最小发布链路，但仍未实现 Gmail、Drive、GitHub 的完整业务操作工具族。
+- 当前已实现 GitHub 最小发布链路、业务路由决策和 GitHub 缺口补全 V1，且当前统一入口阶段只覆盖 GitHub，不覆盖 Google 业务聊天闭环。
 - Google 浏览器 OAuth 已支持本地 loopback 回调，但仍依赖用户提供有效的 OAuth client 信息。
 - GitHub 当前只做 `manual_token` 路径，不依赖 `gh auth login`，也未实现 GitHub 浏览器 OAuth。
 - 默认每个 provider 只维护一个活动账号，多账号切换未实现。
 - 本项目不会把本地认证结果写回官方插件登录态。
+- 对于 GitHub 仓库 / PR / issue 协作操作，本项目当前采用“官方优先、保守回退到本地”的策略；当前线程内无法稳定暴露官方 GitHub connector 工具面时，会按保守策略回退本地实现。
+- GitHub 本地协作写操作当前要求 token 具备 `repo` 或 `public_repo` 范围；若 scope 不足，会返回 `github_scope_missing`。
+- GitHub MCP 业务底座第一阶段当前固定阻塞语义至少包括：
+  - `github_auth_required`
+  - `github_scope_missing`
+  - `repository_not_found`
+  - `issue_not_found`
+  - `pull_request_not_found`
+  - `github_repo_access_denied`
+- 对于 Google 业务操作，当前尚未进入本地业务层缺口补全阶段。
+- GitHub 聊天统一入口第一阶段当前仍未覆盖标签修改、merge、approve / request changes、release 等更完整写操作。
+- GitHub 聊天统一入口第一阶段当前仍要求业务操作明确提供 `repositoryUrl`，发布明确提供 `commitMessage` 并在预览后确认。
 - 即使后续接入 Codex 设置中的 MCP 管理，也不等于 Codex 原生会显示“Gmail 已登录 / GitHub 已登录”的平台级登录面板。
 - GitHub 发布 v1 当前只支持当前已登录个人账号名下仓库，不支持组织仓库。
 - GitHub 发布 v1 当前要求用户显式提供 commit message，并在预览后确认。
@@ -278,6 +486,9 @@ auth_status_overview()
   - `mcp/service-auth-gateway/.mcp.json`
 - 当前全局 MCP 配置中已存在：
   - `mcp_servers.service-auth-gateway`
+- 当前需要注意：
+  - `C:\Users\86175\.codex\config.toml` 里的全局 `service-auth-gateway` 仍指向旧路径 `D:\project\CodexWorkSpace\2026-04-29-login\...`
+  - 这属于用户环境现状，不应误写为当前仓库内配置已自动切到 `2026-04-29-login-business`
 
 这表示：
 
@@ -290,6 +501,12 @@ auth_status_overview()
 
 如果继续推进，优先级建议如下：
 
-1. 先为 GitHub 补齐最小发布链路：仓库校验、git 初始化或绑定、commit、push
-2. 在已实现的 GitHub 发布链路基础上，再补对应 provider 的业务操作 adapter
-3. 在当前 HTML 面板基础上，再评估是否需要更强的可视化登录面板或更接近 `@` 入口的体验层
+1. 先做主线检查与人工确认：
+   - 按当前 `ready_for_mainline` 状态做最终人工复核
+   - 由用户决定是否提交或合并主线
+2. 如本轮暂不并主线，则保持当前实现冻结：
+   - 不继续扩 GitHub / Google 新能力
+   - 只接受 bug 修复、漂移修复和必要文档修正
+3. 主线稳定后，再评估：
+   - GitHub 标签、merge、release 等后续写操作
+   - Google 业务层缺口补全

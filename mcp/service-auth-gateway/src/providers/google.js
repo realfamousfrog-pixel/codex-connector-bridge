@@ -89,6 +89,32 @@ async function fetchProfile(accessToken) {
   return result.body;
 }
 
+async function fetchGmailProfile(accessToken) {
+  const result = await jsonRequest("https://gmail.googleapis.com/gmail/v1/users/me/profile", {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+  if (!result.ok) {
+    return null;
+  }
+  return result.body;
+}
+
+async function resolveAccountLabel(accessToken, bundles = []) {
+  const bundleSet = new Set(bundles);
+  let gmailEmail = null;
+  if (bundleSet.has(CAPABILITY_BUNDLES.GMAIL_BASIC)) {
+    const gmailProfile = await fetchGmailProfile(accessToken);
+    gmailEmail = gmailProfile?.emailAddress ?? null;
+  }
+  const profile = await fetchProfile(accessToken);
+  return {
+    profile,
+    accountLabel: gmailEmail ?? profile?.email ?? null,
+  };
+}
+
 export const googleProvider = {
   provider: "google",
   supportedMethods: [METHODS.BROWSER_OAUTH, METHODS.MANUAL_REFRESH_TOKEN],
@@ -128,7 +154,7 @@ export const googleProvider = {
         message: body.error_description ?? body.error ?? "Google OAuth exchange failed.",
       };
     }
-    const profile = await fetchProfile(body.access_token);
+    const resolvedAccount = await resolveAccountLabel(body.access_token, bundles);
     return {
       state: STATES.AUTHENTICATED,
       secret: {
@@ -137,7 +163,7 @@ export const googleProvider = {
         refreshToken: body.refresh_token,
         accessToken: body.access_token,
       },
-      accountLabel: profile?.email ?? profile?.name ?? "google-user",
+      accountLabel: resolvedAccount.accountLabel,
       grantedBundles: bundles,
       capabilities: dedupeScopes(bundles),
       expiresAt: addSeconds(nowIso(), body.expires_in ?? 3600),
@@ -161,12 +187,13 @@ export const googleProvider = {
         message: refreshed.message,
       };
     }
-    const profile = await fetchProfile(refreshed.accessToken);
+    const grantedBundles = secret.grantedBundles ?? expectedBundles;
+    const resolvedAccount = await resolveAccountLabel(refreshed.accessToken, grantedBundles);
     return {
       state: STATES.AUTHENTICATED,
-      accountLabel: profile?.email ?? profile?.name ?? "google-user",
-      grantedBundles: secret.grantedBundles ?? expectedBundles,
-      capabilities: dedupeScopes(secret.grantedBundles ?? expectedBundles),
+      accountLabel: resolvedAccount.accountLabel,
+      grantedBundles,
+      capabilities: dedupeScopes(grantedBundles),
       expiresAt: addSeconds(nowIso(), refreshed.expiresIn),
       connectorHint: CONNECTOR_HINTS.LOCAL,
       lastValidatedAt: nowIso(),

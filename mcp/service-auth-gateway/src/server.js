@@ -109,6 +109,27 @@ const tools = [
     },
   },
   {
+    name: "auth_status_cards",
+    description: "Return visualization-friendly auth status cards for GitHub and Gmail.",
+    inputSchema: {
+      type: "object",
+      properties: {},
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "auth_refresh_status_card",
+    description: "Run online validation for a single auth status card.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        cardId: { type: "string", enum: ["github", "gmail"] },
+      },
+      required: ["cardId"],
+      additionalProperties: false,
+    },
+  },
+  {
     name: "github_publish_prepare",
     description: "Prepare a GitHub publish operation for the current local project.",
     inputSchema: {

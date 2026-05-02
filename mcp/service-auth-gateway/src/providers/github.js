@@ -2,6 +2,18 @@ import { CAPABILITY_BUNDLES, CONNECTOR_HINTS, METHODS, STATES } from "../constan
 import { jsonRequest } from "../http-client.js";
 import { nowIso } from "../utils.js";
 
+function formatGithubAccountLabel(body) {
+  const login = String(body?.login ?? "").trim();
+  const name = String(body?.name ?? "").trim();
+  if (name) {
+    return name;
+  }
+  if (login) {
+    return `@${login}`;
+  }
+  return "github-user";
+}
+
 export const githubProvider = {
   provider: "github",
   supportedMethods: [METHODS.MANUAL_TOKEN],
@@ -51,7 +63,7 @@ export const githubProvider = {
     }
     return {
       state: STATES.AUTHENTICATED,
-      accountLabel: result.body?.login ?? "github-user",
+      accountLabel: formatGithubAccountLabel(result.body),
       grantedBundles: [CAPABILITY_BUNDLES.GITHUB_BASIC],
       capabilities: scopes,
       expiresAt: null,

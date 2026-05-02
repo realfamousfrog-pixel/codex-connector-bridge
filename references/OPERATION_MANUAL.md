@@ -32,6 +32,8 @@
 - 运行测试和 smoke test
 - 查看 provider 列表
 - 查看登录状态摘要
+- 查看 GitHub / Gmail 状态卡
+- 对单张状态卡执行在线校验
 - 查看单个 provider 状态
 - GitHub `manual_token` 登录
 - GitHub 仓库链接发布预览
@@ -65,8 +67,8 @@
 
 相关导航：
 
-- [DOCUMENTATION_GUIDE.md](D:/project/CodexWorkSpace/2026-04-29-login/DOCUMENTATION_GUIDE.md)
-- [PROJECT_CONTEXT.md](D:/project/CodexWorkSpace/2026-04-29-login/PROJECT_CONTEXT.md)
+- [DOCUMENTATION_GUIDE.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/DOCUMENTATION_GUIDE.md)
+- [PROJECT_CONTEXT.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/PROJECT_CONTEXT.md)
 
 ## 使用前提
 
@@ -131,7 +133,7 @@ Google OAuth 默认支持：
 进入目录：
 
 ```powershell
-cd D:\project\CodexWorkSpace\2026-04-29-login\mcp\service-auth-gateway
+cd D:\project\CodexWorkSpace\2026-04-29-login-experience\mcp\service-auth-gateway
 ```
 
 启动服务：
@@ -272,10 +274,51 @@ ui_open_panel()
 
 #### 当前面板能力
 
-- 查看 GitHub / Google 登录总览
-- 手动校验 GitHub 登录
+- 首屏显示 GitHub / Gmail 缓存状态卡，再自动执行在线校验
+- 手动刷新 GitHub / Gmail 单张状态卡
+- GitHub 账号优先显示 GitHub name，缺少时回退为 `@login`
+- Gmail 账号优先显示 Gmail profile 邮箱，拿不到时回退到 Google profile email
 - 注销 GitHub 本地凭据
+- 当前不支持面板内 Gmail 注销
 - 填写仓库链接、commit message 并执行 GitHub 发布预览 / 发布
+- 预览区显示待提交文件扁平列表，执行后结果区会继续显示发布结果或阻塞原因
+
+#### 当前面板边界
+
+- 面板当前只覆盖本地认证状态查看与 GitHub 发布，不是完整业务客户端
+- Gmail 卡片只是 `google + gmail-basic` 的本地在线校验，不代表官方 Gmail connector 登录态
+
+### 查看登录状态卡
+
+#### 前提
+
+- MCP 服务已可调用
+
+#### 步骤
+
+调用：
+
+```text
+auth_status_cards()
+```
+
+单卡在线校验：
+
+```text
+auth_refresh_status_card({ cardId: "github" })
+auth_refresh_status_card({ cardId: "gmail" })
+```
+
+#### 结果
+
+- 返回 GitHub / Gmail 两张体验层状态卡
+- 区分当前是本地缓存摘要还是已完成在线校验
+- 用中文用户态文案显示状态、账号和下一步动作
+
+#### 下一步
+
+- 如果要查看更通用的 provider 摘要，继续执行“查看登录状态摘要”
+- 如果要查某个 provider 的完整状态，继续执行“查看单个 provider 状态”
 
 ### GitHub 仓库链接发布
 
@@ -609,7 +652,7 @@ auth_logout({ provider: "google" })
 
 更完整说明可参考：
 
-- [LOGIN_STATUS_USAGE.md](D:/project/CodexWorkSpace/2026-04-29-login/references/LOGIN_STATUS_USAGE.md)
+- [LOGIN_STATUS_USAGE.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/references/LOGIN_STATUS_USAGE.md)
 
 当前状态含义如下：
 
@@ -619,6 +662,8 @@ auth_logout({ provider: "google" })
   - 本地 secret 已存在，但还没有恢复成完整状态；可以继续校验恢复
 - `authenticated`
   - 当前已校验且可用
+- `reauth_required`
+  - 当前 provider 已有登录信息，但缺少当前能力所需 bundle，需要重新授权
 - `expired`
   - 登录信息存在，但已过期或 refresh 失败
 - `invalid`

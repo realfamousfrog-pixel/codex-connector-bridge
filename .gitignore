@@ -7,3 +7,7 @@ node_modules/
 dist/
 build/
 coverage/
+
+.codex-panel-error.txt
+.codex-panel-launch.mjs
+.codex-panel-url.txt

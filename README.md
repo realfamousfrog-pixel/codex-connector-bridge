@@ -4,13 +4,13 @@
 
 ## 主要文档
 
-- [DOCUMENTATION_GUIDE.md](D:/project/CodexWorkSpace/2026-04-29-login/DOCUMENTATION_GUIDE.md)
+- [DOCUMENTATION_GUIDE.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/DOCUMENTATION_GUIDE.md)
   - 当前项目全部说明文档的导航入口
-- [PROJECT_CONTEXT.md](D:/project/CodexWorkSpace/2026-04-29-login/PROJECT_CONTEXT.md)
+- [PROJECT_CONTEXT.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/PROJECT_CONTEXT.md)
   - 项目主说明与持续维护上下文
-- [references/MCP_AND_PROJECT_GUIDE.md](D:/project/CodexWorkSpace/2026-04-29-login/references/MCP_AND_PROJECT_GUIDE.md)
+- [references/MCP_AND_PROJECT_GUIDE.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/references/MCP_AND_PROJECT_GUIDE.md)
   - 面向新手的 MCP 与项目详细说明
-- [references/OPERATION_MANUAL.md](D:/project/CodexWorkSpace/2026-04-29-login/references/OPERATION_MANUAL.md)
+- [references/OPERATION_MANUAL.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/references/OPERATION_MANUAL.md)
   - 面向实际使用的正式操作手册
 
 ## 当前能力
@@ -23,15 +23,19 @@
 - Google `manual_refresh_token`
 - Google 本地 loopback OAuth 回调
 - 登录状态可视化摘要 `auth_status_overview`
+- GitHub / Gmail 状态卡 `auth_status_cards`
+- 单卡在线校验 `auth_refresh_status_card`
 - 本地 HTML 面板 `ui_open_panel`
 
 ## 当前定位
 
 - 当前已实现认证层、GitHub 最小发布链路和状态可视化原型
+- 当前已实现 GitHub / Gmail 双状态卡与本地 HTML 面板，面板首屏先展示缓存摘要，再自动在线校验
 - 当前项目内已提供本地 MCP manifest，且当前用户环境已将 `service-auth-gateway` 注册到全局 Codex MCP 配置
 - 当前已支持“提供 GitHub 仓库地址即可预览并推送当前项目”这一条最小发布路径
 - 当前尚未实现 Gmail / GitHub 完整业务操作层
 - 当前不承诺直接接管官方 `@gmail/@github` 入口
+- Gmail 卡片只是 `google + gmail-basic` 的本地在线校验，不代表官方 Gmail connector 登录态
 
 ## 浏览器说明
 
@@ -41,8 +45,8 @@
 
 ## 关键目录
 
-- [skill/service-auth-router](D:/project/CodexWorkSpace/2026-04-29-login/skill/service-auth-router)
-- [mcp/service-auth-gateway](D:/project/CodexWorkSpace/2026-04-29-login/mcp/service-auth-gateway)
-- [references/provider-matrix.md](D:/project/CodexWorkSpace/2026-04-29-login/references/provider-matrix.md)
-- [references/LOGIN_STATUS_USAGE.md](D:/project/CodexWorkSpace/2026-04-29-login/references/LOGIN_STATUS_USAGE.md)
-- [references/OPERATION_MANUAL.md](D:/project/CodexWorkSpace/2026-04-29-login/references/OPERATION_MANUAL.md)
+- [skill/service-auth-router](D:/project/CodexWorkSpace/2026-04-29-login-experience/skill/service-auth-router)
+- [mcp/service-auth-gateway](D:/project/CodexWorkSpace/2026-04-29-login-experience/mcp/service-auth-gateway)
+- [references/provider-matrix.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/references/provider-matrix.md)
+- [references/LOGIN_STATUS_USAGE.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/references/LOGIN_STATUS_USAGE.md)
+- [references/OPERATION_MANUAL.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/references/OPERATION_MANUAL.md)

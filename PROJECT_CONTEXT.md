@@ -70,9 +70,15 @@
   - 已完成至少一次真实 `browser_oauth` 联调并验证可写入本地凭据存储
   - 登录状态可视化
     - 支持结构化状态摘要输出
+    - 已支持以 `gmail-basic` 为准的 Gmail 在线状态查看
   - 本地可视化面板
     - 已支持 `ui_open_panel`
-    - 当前面板可查看登录总览，并提供 GitHub 发布入口
+    - 当前面板首屏先显示缓存摘要，再并行自动执行 GitHub / Gmail 在线校验
+    - 当前面板支持手动刷新 GitHub / Gmail 状态
+    - 当前面板已改为中文用户态展示，不再直接暴露 `authenticated`、`ready` 等后端技术字段
+    - GitHub 当前优先显示 GitHub name；若拿不到 name，则回退为仅显示 `@login`
+    - Gmail 当前优先显示 Gmail 资料接口返回的真实邮箱；若拿不到，再回退到 Google profile email；若仍拿不到，则隐藏账号字段
+    - 当前面板可查看 GitHub / Gmail 两张状态卡，并提供 GitHub 发布入口
 
 当前接入形态需要区分两层事实：
 
@@ -88,7 +94,7 @@
 
 - 当前已实现：
   - GitHub `manual_token` 认证与有效性校验
-  - 登录状态查看、校验与本地凭据管理
+  - GitHub / Gmail 在线状态查看、校验与本地凭据管理
   - 基于仓库链接的 GitHub 发布准备：
     - 校验当前 GitHub 登录
     - 校验仓库 owner 是否属于当前已登录个人账号
@@ -104,6 +110,8 @@
   - 基于已登录状态直接执行 GitHub 仓库、分支、PR、Pages、Actions 等业务操作
   - 组织仓库创建与发布
   - 非空远端自动合并、pull、rebase、force push
+  - 面板内直接发起 GitHub / Gmail 登录
+  - 面板内 Gmail 注销
   - 仅凭自然语言在输入框中达到官方 `@github` 等效体验
 - 规划中但尚未交付：
   - 增加 GitHub 业务操作 adapter，补仓库信息读取、分支、PR 与发布结果回显
@@ -154,6 +162,8 @@
 - `auth_list_providers`
 - `auth_status`
 - `auth_status_overview`
+- `auth_status_cards`
+- `auth_refresh_status_card`
 - `auth_begin`
 - `auth_complete`
 - `auth_validate`
@@ -179,21 +189,21 @@
 本地运行入口：
 
 ```powershell
-cd D:\project\CodexWorkSpace\2026-04-29-login\mcp\service-auth-gateway
+cd D:\project\CodexWorkSpace\2026-04-29-login-experience\mcp\service-auth-gateway
 npm start
 ```
 
 测试命令：
 
 ```powershell
-cd D:\project\CodexWorkSpace\2026-04-29-login\mcp\service-auth-gateway
+cd D:\project\CodexWorkSpace\2026-04-29-login-experience\mcp\service-auth-gateway
 npm test
 ```
 
 MCP smoke test：
 
 ```powershell
-cd D:\project\CodexWorkSpace\2026-04-29-login\mcp\service-auth-gateway
+cd D:\project\CodexWorkSpace\2026-04-29-login-experience\mcp\service-auth-gateway
 npm run smoke
 ```
 
@@ -208,6 +218,7 @@ npm run smoke
 
 - 结构化状态可视化：
   - `auth_status_overview()`
+  - `auth_status_cards()`
 - 本地 HTML 面板：
   - `ui_open_panel()`
 
@@ -226,12 +237,42 @@ auth_status_overview()
 - 上次校验时间
 - 下一步建议动作
 
+如果要查看面向体验层的 GitHub / Gmail 业务卡片状态，推荐使用：
+
+```text
+auth_status_cards()
+```
+
+它会返回：
+
+- `GitHub`
+- `Gmail`
+
+两张状态卡，并区分：
+
+- `cached`
+  - 当前为本地缓存摘要
+- `online`
+  - 当前结果已完成在线校验
+
+对应的单卡在线刷新入口：
+
+```text
+auth_refresh_status_card({ cardId: "github" })
+auth_refresh_status_card({ cardId: "gmail" })
+```
+
 本地 HTML 面板当前支持：
 
-- 查看 GitHub / Google 登录总览
-- 手动校验 GitHub 登录
+- 首屏显示 GitHub / Gmail 缓存摘要
+- 并行自动执行 GitHub / Gmail 在线校验
+- 手动刷新 GitHub / Gmail 状态
+- 使用中文用户态展示登录状态与校验结果
+- GitHub 卡片账号优先显示 GitHub name，缺少时回退为 `@login`
 - 注销 GitHub 本地凭据
-- 输入仓库链接、commit message 并执行 GitHub 发布预览 / 发布
+- 输入仓库链接、Git commit message 并执行 GitHub 发布预览 / 发布
+- 预览发布时展示待提交文件的扁平列表，不展示目录树
+- 底部结果区主要显示执行发布结果与错误，不在预览时展示原始 JSON
 
 # 凭据与状态
 
@@ -265,9 +306,11 @@ auth_status_overview()
 - 默认每个 provider 只维护一个活动账号，多账号切换未实现。
 - 本项目不会把本地认证结果写回官方插件登录态。
 - 即使后续接入 Codex 设置中的 MCP 管理，也不等于 Codex 原生会显示“Gmail 已登录 / GitHub 已登录”的平台级登录面板。
+- 当前面板的 Gmail 状态查看是基于 `google` provider + `gmail-basic` capability 的本地在线校验，不代表官方 Gmail connector 登录态。
 - GitHub 发布 v1 当前只支持当前已登录个人账号名下仓库，不支持组织仓库。
 - GitHub 发布 v1 当前要求用户显式提供 commit message，并在预览后确认。
 - GitHub 发布 v1 当前不处理非空远端自动合并、pull、rebase、force push、子模块或 LFS。
+- 当前面板中的“Git 提交说明（Commit Message）”会以“注：”形式说明它对应 git commit message，而不是 GitHub release note 或发布备注。
 
 ## 全局接入现状
 

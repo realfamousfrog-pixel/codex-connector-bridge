@@ -9,7 +9,7 @@
 - 这个项目做的事情是：
   - 用一个统一 `skill` 告诉 Codex 该怎么判断登录问题
   - 用一个本地 `MCP` 服务真正处理登录状态、登录流程和认证信息
-  - 用结构化状态摘要实现第一版“登录状态可视化”
+- 用结构化状态摘要、状态卡片和本地 HTML 面板实现当前阶段的“登录状态可视化”
 
 简单说，`skill` 负责“会不会做、怎么想、怎么判断”，`MCP` 负责“能不能真的执行”。
 
@@ -230,7 +230,7 @@ auth_status({
 
 目录：
 
-- [skill/service-auth-router](D:/project/CodexWorkSpace/2026-04-29-login/skill/service-auth-router)
+- [skill/service-auth-router](D:/project/CodexWorkSpace/2026-04-29-login-experience/skill/service-auth-router)
 
 它主要负责“判断”：
 
@@ -243,7 +243,7 @@ auth_status({
 
 目录：
 
-- [mcp/service-auth-gateway](D:/project/CodexWorkSpace/2026-04-29-login/mcp/service-auth-gateway)
+- [mcp/service-auth-gateway](D:/project/CodexWorkSpace/2026-04-29-login-experience/mcp/service-auth-gateway)
 
 它主要负责“执行”：
 
@@ -264,13 +264,15 @@ auth_status({
 - Google `browser_oauth`
 - Google `manual_refresh_token`
 - 登录状态可视化摘要
+- GitHub / Gmail 状态卡
+- 本地 HTML 面板 `ui_open_panel`
 
 当前未实现：
 
 - 官方 `@gmail/@github` 入口接管
 - Gmail 发信/读信
 - GitHub 仓库/PR/issue 业务操作
-- 点击式网页登录面板
+- 更完整桌面级交互面板
 
 ---
 
@@ -278,6 +280,6 @@ auth_status({
 
 如果你已经理解原理，接下来建议看：
 
-- [OPERATION_MANUAL.md](D:/project/CodexWorkSpace/2026-04-29-login/references/OPERATION_MANUAL.md)
-- [LOGIN_STATUS_USAGE.md](D:/project/CodexWorkSpace/2026-04-29-login/references/LOGIN_STATUS_USAGE.md)
-- [provider-matrix.md](D:/project/CodexWorkSpace/2026-04-29-login/references/provider-matrix.md)
+- [OPERATION_MANUAL.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/references/OPERATION_MANUAL.md)
+- [LOGIN_STATUS_USAGE.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/references/LOGIN_STATUS_USAGE.md)
+- [provider-matrix.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/references/provider-matrix.md)

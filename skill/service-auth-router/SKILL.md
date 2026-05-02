@@ -30,6 +30,8 @@ Use this skill as the single entrypoint for local authentication work.
 - `auth_list_providers`
 - `auth_status`
 - `auth_status_overview`
+- `auth_status_cards`
+- `auth_refresh_status_card`
 - `auth_begin`
 - `auth_complete`
 - `auth_validate`
@@ -57,7 +59,9 @@ Return a concise routing summary with:
 - current local state
 - next required user action
 
-For login visualization or "what is logged in right now" requests, prefer `auth_status_overview` first, then drill into `auth_status` for a specific provider when needed.
+For login visualization requests, use `auth_status_overview` for provider-level summaries.
+For experience-layer card or panel scenarios, prefer `auth_status_cards`, then use `auth_refresh_status_card` for single-card online validation.
+For "what is logged in right now" requests that need provider details, drill into `auth_status` after the summary or card result.
 For local publish requests, prefer `github_publish_prepare` first, surface any blocking reason verbatim, and only call `github_publish_execute` after the user has confirmed preview, visibility, and commit message requirements.
 
 ## References

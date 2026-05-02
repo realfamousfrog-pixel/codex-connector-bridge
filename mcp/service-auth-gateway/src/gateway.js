@@ -56,7 +56,11 @@ async function buildStatusView(provider, capabilityBundle) {
     return providerResponse(provider, null);
   }
   if (savedState && !secret) {
-    if (capabilityBundle && !hasBundle(savedState, capabilityBundle)) {
+    if (
+      savedState.state === STATES.AUTHENTICATED &&
+      capabilityBundle &&
+      !hasBundle(savedState, capabilityBundle)
+    ) {
       return providerResponse(provider, {
         ...savedState,
         nextAction: "reauth_required",
@@ -79,7 +83,11 @@ async function buildStatusView(provider, capabilityBundle) {
       message: "Secret exists and can be validated to restore provider state.",
     });
   }
-  if (capabilityBundle && !hasBundle(savedState, capabilityBundle)) {
+  if (
+    savedState?.state === STATES.AUTHENTICATED &&
+    capabilityBundle &&
+    !hasBundle(savedState, capabilityBundle)
+  ) {
     return providerResponse(provider, {
       ...savedState,
       nextAction: "reauth_required",
@@ -104,6 +112,100 @@ function hasBundle(state, capabilityBundle) {
     return true;
   }
   return (state?.grantedBundles ?? []).includes(capabilityBundle);
+}
+
+const STATUS_SOURCES = {
+  CACHED: "cached",
+  ONLINE: "online",
+};
+
+const STATUS_CARD_CONFIG = {
+  github: {
+    id: "github",
+    title: "GitHub",
+    provider: PROVIDERS.github,
+    capabilityBundle: CAPABILITY_BUNDLES.GITHUB_BASIC,
+    accountLabel: "GitHub 账号",
+  },
+  gmail: {
+    id: "gmail",
+    title: "Gmail",
+    provider: PROVIDERS.google,
+    capabilityBundle: CAPABILITY_BUNDLES.GMAIL_BASIC,
+    accountLabel: "Gmail 账号",
+  },
+};
+
+function assertCardId(cardId) {
+  if (!STATUS_CARD_CONFIG[cardId]) {
+    throw new Error(`Unsupported status card: ${cardId}`);
+  }
+}
+
+function cardStateFromView(view) {
+  if (view.nextAction === "reauth_required") {
+    return "reauth_required";
+  }
+  return view.state;
+}
+
+function localizeCardState(state) {
+  const mapping = {
+    authenticated: "已登录",
+    saved: "已保存，待校验",
+    unauthenticated: "未登录",
+    expired: "登录已过期",
+    invalid: "登录无效",
+    reauth_required: "需补充授权",
+    not_configured: "未完成配置",
+  };
+  return mapping[state] ?? "状态未知";
+}
+
+function localizeStatusSource(statusSource) {
+  return statusSource === STATUS_SOURCES.ONLINE ? "已在线校验" : "本地摘要";
+}
+
+function localizeCardMessage(config, view) {
+  if (view.nextAction === "reauth_required") {
+    return `${config.title} 当前缺少所需授权，请重新授权。`;
+  }
+  const mapping = {
+    authenticated: `${config.title} 登录状态校验通过`,
+    saved: `${config.title} 登录信息已保存，等待在线校验`,
+    unauthenticated: `${config.title} 当前未登录`,
+    expired: `${config.title} 登录状态已过期，请重新登录`,
+    invalid: `${config.title} 登录信息无效，请重新登录`,
+    not_configured: `${config.title} 登录配置尚未完成`,
+  };
+  return mapping[view.state] ?? view.message;
+}
+
+function toStatusCard(config, view, { statusSource, isOnlineVerified, refreshError } = {}) {
+  return {
+    id: config.id,
+    title: config.title,
+    provider: config.provider,
+    capabilityBundle: config.capabilityBundle,
+    state: cardStateFromView(view),
+    stateLabel: localizeCardState(cardStateFromView(view)),
+    accountLabel: view.accountLabel,
+    accountLabelTitle: config.accountLabel,
+    lastValidatedAt: view.lastValidatedAt,
+    nextAction: view.nextAction,
+    message: localizeCardMessage(config, view),
+    grantedBundles: view.grantedBundles,
+    isOnlineVerified,
+    statusSource,
+    statusSourceLabel: localizeStatusSource(statusSource),
+    refreshError: refreshError ?? null,
+  };
+}
+
+async function buildStatusCard(cardId, options) {
+  const config = STATUS_CARD_CONFIG[cardId];
+  const view = await buildStatusView(config.provider, config.capabilityBundle);
+  return toStatusCard(config, view, options);
 }
 
 export class AuthGateway {
@@ -458,6 +560,45 @@ export class AuthGateway {
     };
   }
 
+  async auth_status_cards() {
+    const cards = await Promise.all(
+      Object.keys(STATUS_CARD_CONFIG).map((cardId) =>
+        buildStatusCard(cardId, {
+          statusSource: STATUS_SOURCES.CACHED,
+          isOnlineVerified: false,
+        }),
+      ),
+    );
+    return {
+      cards,
+      message: "Status cards are suitable for auth status panels.",
+    };
+  }
+
+  async auth_refresh_status_card({ cardId } = {}) {
+    assertCardId(cardId);
+    const config = STATUS_CARD_CONFIG[cardId];
+    const fallback = await buildStatusCard(cardId, {
+      statusSource: STATUS_SOURCES.CACHED,
+      isOnlineVerified: false,
+    });
+    try {
+      await this.auth_validate({ provider: config.provider });
+      const refreshed = await buildStatusView(config.provider, config.capabilityBundle);
+      return toStatusCard(config, refreshed, {
+        statusSource: STATUS_SOURCES.ONLINE,
+        isOnlineVerified: true,
+      });
+    } catch (error) {
+      logEvent("status_card_refresh_failed", { cardId, message: error.message });
+      return {
+        ...fallback,
+        message: `${fallback.message}。在线校验失败：${error.message}`.trim(),
+        refreshError: error.message,
+      };
+    }
+  }
+
   async auth_logout({ provider } = {}) {
     assertProvider(provider);
     await removeProviderState(provider);
@@ -501,6 +642,8 @@ export class AuthGateway {
 
   async ui_open_panel() {
     const panel = await ensurePanelServer({
+      authStatusCards: () => this.auth_status_cards(),
+      authRefreshStatusCard: (args) => this.auth_refresh_status_card(args),
       authStatusOverview: () => this.auth_status_overview(),
       authValidate: (args) => this.auth_validate(args),
       authLogout: (args) => this.auth_logout(args),

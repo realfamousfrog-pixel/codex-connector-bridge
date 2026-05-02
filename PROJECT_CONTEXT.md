@@ -27,43 +27,34 @@
 
 ## 当前阶段重点
 
-- 当前阶段重点已经从“继续先补底层认证”切换为“先收口 GitHub MCP 业务底座，再收口 GitHub 聊天统一入口”。
-- 第一阶段统一入口继续复用 `skill/service-auth-router/`，不新增并列 GitHub skill。
-- 统一范围当前只覆盖 GitHub：
-  - login
-  - status / validate / logout
-  - repository / branch / PR / issue 读操作
-  - issue / PR 第一批协作写操作
+- 当前主线已经并入 GitHub MCP 业务底座、GitHub 聊天统一入口第一阶段，以及体验层状态卡和本地面板能力。
+- 当前统一入口继续复用 `skill/service-auth-router/`，不新增并列 GitHub skill。
+- 当前统一范围固定为：
+  - GitHub login
+  - GitHub status / validate / logout
+  - GitHub repository / branch / PR / issue 读操作
+  - GitHub issue / PR 第一批协作写操作
   - current-project publish
-- 当前阶段不把 Google 业务聊天入口一起并入闭环。
+  - GitHub / Gmail 状态卡与本地状态面板
+- Google 业务聊天入口当前仍未并入统一闭环。
 
 ## 当前工作路线
 
-当前固定按以下优先级推进，不倒序执行：
+当前主线后的优先级如下：
 
-1. 先收口 GitHub MCP 业务底座
-   - 固定 `auth_resolve_route`
-   - 固定 GitHub 读操作本地回退
-   - 固定 GitHub 第一批协作写操作本地回退
-   - 固定 GitHub 发布准备与执行链路
-   - 先把接口、阻塞原因、scope 约束和测试覆盖稳定下来
-2. 再收口 GitHub 聊天统一入口第一阶段
-   - 继续使用 `skill/service-auth-router/`
-   - 固定“先补参数、再判路由、写前确认”的聊天层交互模型
-   - 不把 skill 文案误当成平台级 `@github` 接管
-3. 最后做主线收口
-   - 统一文档边界
-   - 统一主线提交门槛
-   - 检查实现、测试、文档是否一致
+1. 保持当前 GitHub 业务底座、聊天统一入口和体验层能力稳定
+2. 默认只接受：
+   - bug 修复
+   - 文档漂移修复
+   - 必要的接入状态同步
+3. 后续若继续扩展，再按以下顺序推进：
+   - GitHub 后续写操作
+   - Google 业务层缺口补全
+   - 更完整的本地面板体验
 
-当前不采用以下路线：
+## 主线收口结果
 
-- 先合聊天层文档，再让主线反向补 MCP 底座
-- 把“skill 已能统一描述”误判成“已经达到官方插件同等效果”
-
-## 主线提交门槛
-
-当前项目只有在以下条件全部满足时，才可标记为“可以提交主线”：
+本轮主线收口已经完成，当前主线达成的稳定条件如下：
 
 - MCP 新增工具接口已稳定在当前 V1 范围：
   - `auth_resolve_route`
@@ -95,30 +86,8 @@
   - 当前未实现
   - 当前统一到哪一层
   - 当前仍未达到官方 `@github` 插件同等效果
-- 不存在未解释的接口漂移、命名漂移或文档与实现不一致
-
-## 主线准备状态
-
-当前主线准备状态字段固定为以下三种之一：
-
-- `not_ready`
-- `stabilizing`
-- `ready_for_mainline`
-
-当前状态：
-
-- `ready_for_mainline`
-
-状态解释：
-
-- `not_ready`
-  - 关键接口、测试或能力边界仍在明显变动
-- `stabilizing`
-  - 主体能力已基本落地，正在做测试、聊天层、文档和边界收口
-- `ready_for_mainline`
-  - 已满足本节“主线提交门槛”，可以开始并主线检查与提交
-
-只有状态变为 `ready_for_mainline`，才应提醒用户可以提交主线。
+- 当前主线代码、测试和主文档已经对齐
+- 当前阶段不再使用 `ready_for_mainline` 这类“准备并主线”状态描述，而直接以主线真实状态为准
 
 ## 第二步完成标准
 
@@ -149,8 +118,7 @@ GitHub 聊天统一入口第一阶段只有在以下条件全部满足时，才�
   - 哪些请求会先停在确认摘要
   - 当前仍未达到官方 `@github` 插件同等效果
 - README、主文档、操作手册、skill 说明之间不存在边界冲突或状态倒挂
-- 第二步收口完成后，才可把主线准备状态推进到：
-  - `ready_for_mainline`
+- 第二步收口结果当前已经并入主线
 
 ## 环境假设
 
@@ -371,21 +339,21 @@ GitHub 聊天统一入口第一阶段只有在以下条件全部满足时，才�
 本地运行入口：
 
 ```powershell
-cd D:\project\CodexWorkSpace\2026-04-29-login-experience\mcp\service-auth-gateway
+cd D:\project\CodexWorkSpace\2026-04-29-login\mcp\service-auth-gateway
 npm start
 ```
 
 测试命令：
 
 ```powershell
-cd D:\project\CodexWorkSpace\2026-04-29-login-experience\mcp\service-auth-gateway
+cd D:\project\CodexWorkSpace\2026-04-29-login\mcp\service-auth-gateway
 npm test
 ```
 
 MCP smoke test：
 
 ```powershell
-cd D:\project\CodexWorkSpace\2026-04-29-login-experience\mcp\service-auth-gateway
+cd D:\project\CodexWorkSpace\2026-04-29-login\mcp\service-auth-gateway
 npm run smoke
 ```
 
@@ -510,7 +478,7 @@ auth_refresh_status_card({ cardId: "gmail" })
   - `mcp_servers.service-auth-gateway`
 - 当前需要注意：
   - `C:\Users\86175\.codex\config.toml` 里的全局 `service-auth-gateway` 仍指向旧路径 `D:\project\CodexWorkSpace\2026-04-29-login\...`
-  - 这属于用户环境现状，不应误写为当前仓库内配置已自动切到 `2026-04-29-login-experience`
+  - 这属于用户环境现状，不应误写为仓库外全局配置已自动同步到新的 worktree 或分支路径
 
 这表示：
 
@@ -523,12 +491,9 @@ auth_refresh_status_card({ cardId: "gmail" })
 
 如果继续推进，优先级建议如下：
 
-1. 先做主线检查与人工确认：
-   - 按当前 `ready_for_mainline` 状态做最终人工复核
-   - 由用户决定是否提交或合并主线
-2. 如本轮暂不并主线，则保持当前实现冻结：
+1. 先保持当前主线实现冻结：
    - 不继续扩 GitHub / Google 新能力
    - 只接受 bug 修复、漂移修复和必要文档修正
-3. 主线稳定后，再评估：
+2. 主线稳定后，再评估：
    - GitHub 标签、merge、release 等后续写操作
    - Google 业务层缺口补全

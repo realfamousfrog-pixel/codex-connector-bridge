@@ -231,7 +231,7 @@ auth_status({
 
 目录：
 
-- [skill/service-auth-router](D:/project/CodexWorkSpace/2026-04-29-login-experience/skill/service-auth-router)
+- [skill/service-auth-router](D:/project/CodexWorkSpace/2026-04-29-login/skill/service-auth-router)
 
 它主要负责“判断”：
 
@@ -246,7 +246,7 @@ auth_status({
 
 目录：
 
-- [mcp/service-auth-gateway](D:/project/CodexWorkSpace/2026-04-29-login-experience/mcp/service-auth-gateway)
+- [mcp/service-auth-gateway](D:/project/CodexWorkSpace/2026-04-29-login/mcp/service-auth-gateway)
 
 它主要负责“执行”：
 
@@ -288,6 +288,6 @@ auth_status({
 
 如果你已经理解原理，接下来建议看：
 
-- [OPERATION_MANUAL.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/references/OPERATION_MANUAL.md)
-- [LOGIN_STATUS_USAGE.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/references/LOGIN_STATUS_USAGE.md)
-- [provider-matrix.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/references/provider-matrix.md)
+- [OPERATION_MANUAL.md](D:/project/CodexWorkSpace/2026-04-29-login/references/OPERATION_MANUAL.md)
+- [LOGIN_STATUS_USAGE.md](D:/project/CodexWorkSpace/2026-04-29-login/references/LOGIN_STATUS_USAGE.md)
+- [provider-matrix.md](D:/project/CodexWorkSpace/2026-04-29-login/references/provider-matrix.md)

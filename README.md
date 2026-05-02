@@ -4,13 +4,13 @@
 
 ## 主要文档
 
-- [DOCUMENTATION_GUIDE.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/DOCUMENTATION_GUIDE.md)
+- [DOCUMENTATION_GUIDE.md](D:/project/CodexWorkSpace/2026-04-29-login/DOCUMENTATION_GUIDE.md)
   - 当前项目全部说明文档的导航入口
-- [PROJECT_CONTEXT.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/PROJECT_CONTEXT.md)
+- [PROJECT_CONTEXT.md](D:/project/CodexWorkSpace/2026-04-29-login/PROJECT_CONTEXT.md)
   - 项目主说明与持续维护上下文
-- [references/MCP_AND_PROJECT_GUIDE.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/references/MCP_AND_PROJECT_GUIDE.md)
+- [references/MCP_AND_PROJECT_GUIDE.md](D:/project/CodexWorkSpace/2026-04-29-login/references/MCP_AND_PROJECT_GUIDE.md)
   - 面向新手的 MCP 与项目详细说明
-- [references/OPERATION_MANUAL.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/references/OPERATION_MANUAL.md)
+- [references/OPERATION_MANUAL.md](D:/project/CodexWorkSpace/2026-04-29-login/references/OPERATION_MANUAL.md)
   - 面向实际使用的正式操作手册
 
 ## 当前能力

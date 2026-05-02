@@ -40,7 +40,7 @@ npm run smoke
 
 This project includes a local MCP manifest at:
 
-- [`.mcp.json`](D:/project/CodexWorkSpace/2026-04-29-login-experience/mcp/service-auth-gateway/.mcp.json)
+- [`.mcp.json`](D:/project/CodexWorkSpace/2026-04-29-login/mcp/service-auth-gateway/.mcp.json)
 
 Its current command points to the local server entry:
 

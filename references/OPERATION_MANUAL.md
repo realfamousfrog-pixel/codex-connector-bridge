@@ -72,8 +72,8 @@
 
 相关导航：
 
-- [DOCUMENTATION_GUIDE.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/DOCUMENTATION_GUIDE.md)
-- [PROJECT_CONTEXT.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/PROJECT_CONTEXT.md)
+- [DOCUMENTATION_GUIDE.md](D:/project/CodexWorkSpace/2026-04-29-login/DOCUMENTATION_GUIDE.md)
+- [PROJECT_CONTEXT.md](D:/project/CodexWorkSpace/2026-04-29-login/PROJECT_CONTEXT.md)
 
 ## 使用前提
 
@@ -262,7 +262,7 @@ Google OAuth 默认支持：
 - `service-auth-router` 已固定第一阶段统一范围
 - 文档已明确当前未达到官方 `@github` 插件同等效果
 
-当主文档状态变为 `ready_for_mainline` 时，才表示可以开始主线检查与提交。
+当前能力已并入 `main`，后续若继续扩展，仍应以 `PROJECT_CONTEXT.md` 作为主线状态与能力边界的第一真相源。
 
 ## 快速导航
 
@@ -296,7 +296,7 @@ Google OAuth 默认支持：
 进入目录：
 
 ```powershell
-cd D:\project\CodexWorkSpace\2026-04-29-login-experience\mcp\service-auth-gateway
+cd D:\project\CodexWorkSpace\2026-04-29-login\mcp\service-auth-gateway
 ```
 
 启动服务：
@@ -1020,7 +1020,7 @@ auth_logout({ provider: "google" })
 
 更完整说明可参考：
 
-- [LOGIN_STATUS_USAGE.md](D:/project/CodexWorkSpace/2026-04-29-login-experience/references/LOGIN_STATUS_USAGE.md)
+- [LOGIN_STATUS_USAGE.md](D:/project/CodexWorkSpace/2026-04-29-login/references/LOGIN_STATUS_USAGE.md)
 
 当前状态含义如下：
 

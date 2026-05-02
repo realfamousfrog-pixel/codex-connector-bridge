@@ -39,6 +39,35 @@ export function parseGithubRepositoryUrl(repositoryUrl) {
   };
 }
 
+function readGithubErrorMessage(body, fallback) {
+  if (typeof body === "string" && body.trim()) {
+    return body.trim();
+  }
+  if (body && typeof body.message === "string" && body.message.trim()) {
+    return body.message.trim();
+  }
+  return fallback;
+}
+
+export class GithubApiError extends Error {
+  constructor({ message, status, body, code }) {
+    super(message);
+    this.name = "GithubApiError";
+    this.status = status;
+    this.body = body;
+    this.code = code ?? null;
+  }
+}
+
+function githubApiError(response, fallbackMessage, code) {
+  return new GithubApiError({
+    status: response.status,
+    body: response.body,
+    code,
+    message: readGithubErrorMessage(response.body, fallbackMessage),
+  });
+}
+
 export class GithubRepoClient {
   constructor({ token }) {
     this.token = token;
@@ -66,6 +95,301 @@ export class GithubRepoClient {
     }
     if (!response.ok) {
       throw new Error(`GitHub repository lookup failed with status ${response.status}.`);
+    }
+    return response.body;
+  }
+
+  async listBranches(owner, repo, limit = 20) {
+    const response = await jsonRequest(
+      `https://api.github.com/repos/${owner}/${repo}/branches?per_page=${limit}`,
+      {
+        headers: githubHeaders(this.token),
+      },
+    );
+    if (response.status === 404) {
+      return null;
+    }
+    if (response.status === 403) {
+      throw new Error("GitHub token does not allow branch listing for this repository.");
+    }
+    if (!response.ok) {
+      throw new Error(`GitHub branch listing failed with status ${response.status}.`);
+    }
+    return response.body;
+  }
+
+  async listPullRequests(owner, repo, state = "open", limit = 20) {
+    const response = await jsonRequest(
+      `https://api.github.com/repos/${owner}/${repo}/pulls?state=${encodeURIComponent(state)}&per_page=${limit}`,
+      {
+        headers: githubHeaders(this.token),
+      },
+    );
+    if (response.status === 404) {
+      return null;
+    }
+    if (response.status === 403) {
+      throw new Error("GitHub token does not allow pull request listing for this repository.");
+    }
+    if (!response.ok) {
+      throw new Error(`GitHub pull request listing failed with status ${response.status}.`);
+    }
+    return response.body;
+  }
+
+  async getPullRequest(owner, repo, pullNumber) {
+    const response = await jsonRequest(
+      `https://api.github.com/repos/${owner}/${repo}/pulls/${pullNumber}`,
+      {
+        headers: githubHeaders(this.token),
+      },
+    );
+    if (response.status === 404) {
+      return null;
+    }
+    if (response.status === 403) {
+      throw new Error("GitHub token does not allow pull request access for this repository.");
+    }
+    if (!response.ok) {
+      throw new Error(`GitHub pull request lookup failed with status ${response.status}.`);
+    }
+    return response.body;
+  }
+
+  async listIssues(owner, repo, state = "open", limit = 20) {
+    const response = await jsonRequest(
+      `https://api.github.com/repos/${owner}/${repo}/issues?state=${encodeURIComponent(state)}&per_page=${limit}`,
+      {
+        headers: githubHeaders(this.token),
+      },
+    );
+    if (response.status === 404) {
+      return null;
+    }
+    if (response.status === 403) {
+      throw new Error("GitHub token does not allow issue listing for this repository.");
+    }
+    if (!response.ok) {
+      throw new Error(`GitHub issue listing failed with status ${response.status}.`);
+    }
+    return response.body;
+  }
+
+  async getIssue(owner, repo, issueNumber) {
+    const response = await jsonRequest(
+      `https://api.github.com/repos/${owner}/${repo}/issues/${issueNumber}`,
+      {
+        headers: githubHeaders(this.token),
+      },
+    );
+    if (response.status === 404) {
+      return null;
+    }
+    if (response.status === 403) {
+      throw new Error("GitHub token does not allow issue access for this repository.");
+    }
+    if (!response.ok) {
+      throw new Error(`GitHub issue lookup failed with status ${response.status}.`);
+    }
+    return response.body;
+  }
+
+  async createIssue(owner, repo, { title, body }) {
+    const response = await jsonRequest(`https://api.github.com/repos/${owner}/${repo}/issues`, {
+      method: "POST",
+      headers: {
+        ...githubHeaders(this.token),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        title,
+        body: body ?? "",
+      }),
+    });
+    if (response.status === 404) {
+      throw githubApiError(response, "GitHub repository was not found.", "repository_not_found");
+    }
+    if (response.status === 403) {
+      throw githubApiError(
+        response,
+        "GitHub token does not allow issue creation for this repository.",
+        "issue_create_forbidden",
+      );
+    }
+    if (response.status === 422) {
+      throw githubApiError(
+        response,
+        "GitHub issue creation failed validation.",
+        "issue_create_invalid",
+      );
+    }
+    if (!response.ok) {
+      throw githubApiError(
+        response,
+        `GitHub issue creation failed with status ${response.status}.`,
+        "issue_create_failed",
+      );
+    }
+    return response.body;
+  }
+
+  async createIssueComment(owner, repo, issueNumber, { body }) {
+    const response = await jsonRequest(
+      `https://api.github.com/repos/${owner}/${repo}/issues/${issueNumber}/comments`,
+      {
+        method: "POST",
+        headers: {
+          ...githubHeaders(this.token),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ body }),
+      },
+    );
+    if (response.status === 404) {
+      throw githubApiError(response, "GitHub issue was not found.", "issue_not_found");
+    }
+    if (response.status === 403) {
+      throw githubApiError(
+        response,
+        "GitHub token does not allow issue comment creation for this repository.",
+        "issue_comment_create_forbidden",
+      );
+    }
+    if (response.status === 422) {
+      throw githubApiError(
+        response,
+        "GitHub issue comment creation failed validation.",
+        "issue_comment_create_invalid",
+      );
+    }
+    if (!response.ok) {
+      throw githubApiError(
+        response,
+        `GitHub issue comment creation failed with status ${response.status}.`,
+        "issue_comment_create_failed",
+      );
+    }
+    return response.body;
+  }
+
+  async createPullRequest(owner, repo, { title, body, head, base }) {
+    const response = await jsonRequest(`https://api.github.com/repos/${owner}/${repo}/pulls`, {
+      method: "POST",
+      headers: {
+        ...githubHeaders(this.token),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        title,
+        body: body ?? "",
+        head,
+        base,
+      }),
+    });
+    if (response.status === 404) {
+      throw githubApiError(response, "GitHub repository was not found.", "repository_not_found");
+    }
+    if (response.status === 403) {
+      throw githubApiError(
+        response,
+        "GitHub token does not allow pull request creation for this repository.",
+        "pull_request_create_forbidden",
+      );
+    }
+    if (response.status === 422) {
+      throw githubApiError(
+        response,
+        "GitHub pull request creation failed validation.",
+        "pull_request_create_invalid",
+      );
+    }
+    if (!response.ok) {
+      throw githubApiError(
+        response,
+        `GitHub pull request creation failed with status ${response.status}.`,
+        "pull_request_create_failed",
+      );
+    }
+    return response.body;
+  }
+
+  async createPullRequestComment(owner, repo, pullNumber, { body }) {
+    const response = await jsonRequest(
+      `https://api.github.com/repos/${owner}/${repo}/issues/${pullNumber}/comments`,
+      {
+        method: "POST",
+        headers: {
+          ...githubHeaders(this.token),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ body }),
+      },
+    );
+    if (response.status === 404) {
+      throw githubApiError(response, "GitHub pull request was not found.", "pull_request_not_found");
+    }
+    if (response.status === 403) {
+      throw githubApiError(
+        response,
+        "GitHub token does not allow pull request comment creation for this repository.",
+        "pull_request_comment_create_forbidden",
+      );
+    }
+    if (response.status === 422) {
+      throw githubApiError(
+        response,
+        "GitHub pull request comment creation failed validation.",
+        "pull_request_comment_create_invalid",
+      );
+    }
+    if (!response.ok) {
+      throw githubApiError(
+        response,
+        `GitHub pull request comment creation failed with status ${response.status}.`,
+        "pull_request_comment_create_failed",
+      );
+    }
+    return response.body;
+  }
+
+  async createPullRequestReview(owner, repo, pullNumber, { body }) {
+    const response = await jsonRequest(
+      `https://api.github.com/repos/${owner}/${repo}/pulls/${pullNumber}/reviews`,
+      {
+        method: "POST",
+        headers: {
+          ...githubHeaders(this.token),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          body,
+          event: "COMMENT",
+        }),
+      },
+    );
+    if (response.status === 404) {
+      throw githubApiError(response, "GitHub pull request was not found.", "pull_request_not_found");
+    }
+    if (response.status === 403) {
+      throw githubApiError(
+        response,
+        "GitHub token does not allow pull request review creation for this repository.",
+        "pull_request_review_create_forbidden",
+      );
+    }
+    if (response.status === 422) {
+      throw githubApiError(
+        response,
+        "GitHub pull request review creation failed validation.",
+        "pull_request_review_create_invalid",
+      );
+    }
+    if (!response.ok) {
+      throw githubApiError(
+        response,
+        `GitHub pull request review creation failed with status ${response.status}.`,
+        "pull_request_review_create_failed",
+      );
     }
     return response.body;
   }

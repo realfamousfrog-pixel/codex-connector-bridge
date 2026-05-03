@@ -6,8 +6,6 @@ import { openUrlInChrome } from "../src/browser-launcher.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, "..");
-const defaultClientFile =
-  "C:/Users/86175/Desktop/client_secret_741047607630-l1o9mg8ki46n4h4idfn2qpob95qcr0iu.apps.googleusercontent.com.json";
 const defaultStatusFile = path.join(projectRoot, "data", "google-oauth-live.json");
 
 function getArg(name, fallback) {
@@ -21,9 +19,13 @@ async function writeStatus(file, payload) {
 }
 
 async function main() {
-  const clientFile = getArg("client", defaultClientFile);
+  const clientFile = getArg("client");
   const statusFile = getArg("status", defaultStatusFile);
   const bundle = getArg("bundle", "gmail-basic");
+
+  if (!clientFile) {
+    throw new Error("Missing required --client=<path-to-google-oauth-client-json> argument.");
+  }
 
   const raw = await fs.readFile(clientFile, "utf8");
   const cfg = JSON.parse(raw).installed;

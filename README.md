@@ -2,6 +2,46 @@
 
 面向 Codex 本地环境的统一登录原型，使用 `skill + MCP` 结构为 `GitHub` 和 `Google` 提供统一认证入口。
 
+## 快速开始
+
+公开仓库场景下，推荐先按“项目级接入”完成最小配置。
+
+1. 进入目录：
+
+```powershell
+cd .\mcp\service-auth-gateway
+```
+
+2. 启动服务：
+
+```powershell
+npm start
+```
+
+3. 运行测试：
+
+```powershell
+npm test
+```
+
+4. 运行 smoke test：
+
+```powershell
+npm run smoke
+```
+
+5. 选择接入方式：
+   - 项目级接入：使用仓库内 `mcp/service-auth-gateway/.mcp.json`
+   - 全局接入：在你自己的 Codex 配置中注册 `service-auth-gateway`
+
+6. 首次登录最短路径：
+   - GitHub：准备 PAT，走 `auth_begin` + `auth_complete`
+   - Google：准备你自己的 OAuth client 信息，走 `browser_oauth`
+
+更完整的外部用户配置说明见：
+
+- [references/PUBLIC_SETUP_GUIDE.md](D:/project/CodexWorkSpace/2026-04-29-login/references/PUBLIC_SETUP_GUIDE.md)
+
 ## 主要文档
 
 - [DOCUMENTATION_GUIDE.md](D:/project/CodexWorkSpace/2026-04-29-login/DOCUMENTATION_GUIDE.md)
@@ -12,6 +52,8 @@
   - 面向新手的 MCP 与项目详细说明
 - [references/OPERATION_MANUAL.md](D:/project/CodexWorkSpace/2026-04-29-login/references/OPERATION_MANUAL.md)
   - 面向实际使用的正式操作手册
+- [references/PUBLIC_SETUP_GUIDE.md](D:/project/CodexWorkSpace/2026-04-29-login/references/PUBLIC_SETUP_GUIDE.md)
+  - 面向外部用户的公开安装与配置说明
 
 ## 当前能力
 
@@ -49,7 +91,8 @@
 - 当前 `service-auth-router` 已升级为 GitHub 自然语言统一入口：
   - 统一接收登录、状态、仓库 / 分支 / PR / issue 读操作、第一批协作写操作、当前项目发布
   - 统一采用“先补参数、再判路由、写前确认”的聊天层编排方式
-- 当前项目内已提供本地 MCP manifest，且当前用户环境已将 `service-auth-gateway` 注册到全局 Codex MCP 配置
+- 当前尚未切到显式 `@助手` 入口；后续目标是提供更通俗、边界更清晰、可全局复用的前台统一入口，同时后台继续保持现有实现结构
+- 当前项目内已提供本地 MCP manifest；若要全局发现该服务，需要由用户在自己的 Codex 配置中完成注册
 - 当前已支持“提供 GitHub 仓库地址即可预览并推送当前项目”这一条最小发布路径
 - 当前体验层额外提供：
   - GitHub / Gmail 双状态卡
@@ -68,6 +111,8 @@
   - GitHub / Gmail 状态卡与本地状态面板
 - 当前未统一或未实现：
   - 官方 `@github` / `@gmail` 入口接管
+  - 显式 `@助手` 聊天入口
+  - 跨项目全局复用的统一聊天入口
   - GitHub 标签、merge、approve / request changes、release 等更完整写操作
   - Google 业务聊天入口统一
   - 面板内直接发起 GitHub / Gmail 登录
@@ -75,7 +120,6 @@
 
 ## 浏览器说明
 
-- 当前用户环境只有 `Chrome` 也不影响本项目设计
 - 当前项目内的 Google OAuth 联调优先显式调用 `Chrome`
 - 必要时也可手动复制授权 URL 到 `Chrome`
 

@@ -1,7 +1,6 @@
 import { spawn } from "node:child_process";
 
 const CHROME_CANDIDATES = [
-  "C:/Users/86175/AppData/Local/Google/Chrome/Application/chrome.exe",
   "C:/Program Files/Google/Chrome/Application/chrome.exe",
   "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe",
 ];

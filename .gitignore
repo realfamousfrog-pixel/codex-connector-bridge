@@ -11,3 +11,5 @@ coverage/
 .codex-panel-error.txt
 .codex-panel-launch.mjs
 .codex-panel-url.txt
+
+CODEX_TASK_README.md

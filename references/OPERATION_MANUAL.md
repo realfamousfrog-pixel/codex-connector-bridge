@@ -59,6 +59,8 @@
 当前未实现：
 
 - 官方 `@gmail/@github` 入口接管
+- 显式 `@助手` 聊天入口
+- 跨项目全局复用的统一聊天入口
 - 在本地 MCP 中直接实现 Gmail 发信/读信
 - 在本地 MCP 中直接实现 GitHub 标签修改、merge、approve / request changes、release 等更完整写操作
 - Google 业务聊天入口统一
@@ -66,14 +68,16 @@
 当前接入现状：
 
 - 项目内已提供 `mcp/service-auth-gateway/.mcp.json`
-- 当前用户环境已把 `service-auth-gateway` 注册到全局 Codex MCP 配置
-- 这表示 Codex 可以从全局配置发现该服务
+- 用户也可以在自己的全局 Codex 配置中注册 `service-auth-gateway`
+- 这表示 Codex 可以从项目级或用户自己的全局配置发现该服务
+- 这表示 MCP 服务可被全局发现，不表示全局聊天入口 `@助手` 已经实现
 - 不表示官方 Gmail / GitHub 插件已经接管本地登录态
 
 相关导航：
 
 - [DOCUMENTATION_GUIDE.md](D:/project/CodexWorkSpace/2026-04-29-login/DOCUMENTATION_GUIDE.md)
 - [PROJECT_CONTEXT.md](D:/project/CodexWorkSpace/2026-04-29-login/PROJECT_CONTEXT.md)
+- [PUBLIC_SETUP_GUIDE.md](D:/project/CodexWorkSpace/2026-04-29-login/references/PUBLIC_SETUP_GUIDE.md)
 
 ## 使用前提
 
@@ -84,7 +88,7 @@
 - Windows
 - 已安装 `Node.js`
 - 已安装 `npm`
-- 当前用户机器只有 `Chrome`
+- 推荐已安装 `Chrome`
 
 ### Chrome 说明
 
@@ -93,7 +97,7 @@ Google OAuth 默认支持：
 - 项目内联调脚本优先显式调用 `Chrome` 打开授权链接
 - 或手动复制授权 URL 到 `Chrome`
 
-当前用户环境只有 `Chrome` 不会影响本项目使用。
+若自动拉起失败，也可以手动复制授权 URL 到浏览器。
 
 ### 当前能力边界
 
@@ -116,6 +120,17 @@ Google OAuth 默认支持：
 当前 GitHub 统一聊天入口固定为：
 
 - `skill/service-auth-router`
+
+当前入口形态需要区分两层：
+
+- 当前：
+  - 仍由项目内 `service-auth-router` 负责编排
+  - 用户主要通过自然语言触发
+- 后续目标：
+  - 前台显式入口收口为 `@助手`
+  - 后台内部仍保持 `service-auth-router` / `service-auth-gateway`
+  - 后续可补充中文别名，但当前主名以 `@助手` 为准
+  - 未来目标是让该入口可在任意项目中复用，而不只限当前项目
 
 当前已统一覆盖：
 
@@ -289,14 +304,14 @@ Google OAuth 默认支持：
 
 - 当前项目已存在 `mcp/service-auth-gateway`
 - 本机可运行 `node`
-- 若要依赖 Codex 自动发现该服务，当前用户环境还需要存在有效的全局 MCP 注册
+- 若要依赖 Codex 自动发现该服务，可使用项目内 `.mcp.json`，或在自己的全局 Codex 配置中完成注册
 
 #### 步骤
 
 进入目录：
 
 ```powershell
-cd D:\project\CodexWorkSpace\2026-04-29-login\mcp\service-auth-gateway
+cd .\mcp\service-auth-gateway
 ```
 
 启动服务：
@@ -309,7 +324,7 @@ npm start
 
 - 本地 `service-auth-gateway` MCP 服务启动
 - 后续可接收 MCP 工具调用
-- 若全局配置仍指向当前项目下的 `src/server.js`，Codex 重新加载配置后也可发现该服务
+- 若已通过项目级 manifest 或自己的全局配置完成注册，Codex 重新加载配置后也可发现该服务
 
 #### 下一步
 
@@ -1143,7 +1158,7 @@ auth_validate({ provider: "..." })
 - MCP 服务配置是否正确
 - Codex 是否已重新加载配置
 - 项目路径和 Node 路径是否仍然有效
-- `C:\Users\86175\.codex\config.toml` 中是否仍存在 `mcp_servers.service-auth-gateway`
+- 你的 Codex 全局配置中是否仍存在 `mcp_servers.service-auth-gateway`
 
 ### GitHub 发布预览提示 owner 不支持
 
@@ -1218,3 +1233,17 @@ auth_validate({ provider: "..." })
 ### 官方 `@gmail/@github` 兼容
 
 远期探索，当前不承诺
+
+### 显式 `@助手` 入口
+
+当前未实现：
+
+- 还不能要求用户通过显式 `@助手` 才能进入统一聊天入口
+- 当前也还没有真正的全局聊天入口
+
+后续目标：
+
+- 前台统一入口收口为 `@助手`
+- 后台内部继续保持 `service-auth-router` / `service-auth-gateway`
+- 后续可补充中文别名，但不改变内部实现名
+- 未来让该入口可跨项目全局复用

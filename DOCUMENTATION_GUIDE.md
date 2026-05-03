@@ -38,6 +38,12 @@
 
 - [references/OPERATION_MANUAL.md](D:/project/CodexWorkSpace/2026-04-29-login/references/OPERATION_MANUAL.md)
 
+### 想让别人下载后也能配置使用
+
+看：
+
+- [references/PUBLIC_SETUP_GUIDE.md](D:/project/CodexWorkSpace/2026-04-29-login/references/PUBLIC_SETUP_GUIDE.md)
+
 ### 想查看登录状态说明
 
 看：
@@ -133,6 +139,10 @@
 
 - 正式操作手册
 
+### `references/PUBLIC_SETUP_GUIDE.md`
+
+- 面向外部用户的公开安装与配置说明
+
 ### `references/LOGIN_STATUS_USAGE.md`
 
 - 登录状态专题说明
@@ -164,6 +174,8 @@
 ### 当前未实现
 
 - 官方 `@gmail/@github` 入口接管
+- 显式 `@助手` 聊天入口
+- 跨项目全局复用的统一聊天入口
 - 在本地 MCP 中直接实现 Gmail 发信/读信
 - 在本地 MCP 中直接实现 GitHub 标签修改、merge、release 等更完整写操作
 - Google 业务聊天入口统一

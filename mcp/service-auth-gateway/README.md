@@ -56,7 +56,33 @@ Its current command points to the local server entry:
 }
 ```
 
-This project includes a local manifest for project-scoped registration. In the current user environment, `service-auth-gateway` has also already been registered in `C:\Users\86175\.codex\config.toml`, so Codex can discover it from global MCP config as well. Keep these two facts separate: the repository ships a local manifest, while global registration depends on the user's machine state.
+This project includes a local manifest for project-scoped registration. Users may also register `service-auth-gateway` in their own global Codex configuration if they want cross-project discovery. Keep these two facts separate: the repository ships a local manifest, while global registration depends on the user's machine state.
+
+## Public Setup
+
+For public-repository use, keep the setup model split into two layers:
+
+- project-scoped MCP discovery:
+  - use `mcp/service-auth-gateway/.mcp.json`
+- optional global discovery:
+  - register `service-auth-gateway` in your own Codex configuration
+
+Runtime data defaults to:
+
+- `mcp/service-auth-gateway/data/`
+
+You can override the runtime data directory with:
+
+```powershell
+$env:CODEX_AUTH_GATEWAY_DATA_DIR="D:\your\data\dir"
+```
+
+Credential storage behavior:
+
+- normal Windows runs:
+  - Windows Credential Manager
+- test mode:
+  - environment variables
 
 ## Google Browser OAuth Flow
 

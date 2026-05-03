@@ -15,6 +15,9 @@
   - 形成可持久保存认证信息的本地统一登录与操作底座，重启电脑或重启 Codex 后仍能恢复可用状态
 - 体验目标：
   - 在普通聊天、自定义 skill、MCP 工具入口中，实现与官方 Gmail / GitHub 插件接近的等效体验
+  - 后续把聊天层统一调用收口为面向用户的显式入口 `@助手`，避免当前仅靠自然语言触发时的边界不清
+  - `@助手` 作为前台入口名称存在，后台内部继续沿用 `service-auth-router` / `service-auth-gateway`
+  - 未来目标是让 `@助手` 成为全局可复用入口，而不只限当前项目
 - GitHub 发布目标：
   - 在完成本地 GitHub 认证后，支持从当前工作区直接面向指定 GitHub 仓库执行发布准备与推送
   - 目标体验是用户只需提供仓库地址或目标仓库信息，系统即可完成仓库校验、git 初始化或绑定、提交与 push
@@ -122,7 +125,7 @@ GitHub 聊天统一入口第一阶段只有在以下条件全部满足时，才�
 
 ## 环境假设
 
-- 当前用户机器只有 `Chrome`
+- 当前默认面向 Windows + 本地 Codex 环境维护
 - Google OAuth 当前优先按“显式调用本机 Chrome，必要时再手动复制到 Chrome”设计
 
 # 当前结论
@@ -138,7 +141,7 @@ GitHub 聊天统一入口第一阶段只有在以下条件全部满足时，才�
 
 ## 本地统一登录原型现状
 
-当前已经完成一版可运行的本地统一登录原型，并且 `service-auth-gateway` 已注册到全局 Codex MCP 配置，覆盖：
+当前已经完成一版可运行的本地统一登录原型。仓库内已提供项目级 MCP manifest；若用户自行完成全局注册，也可从自己的 Codex 配置中发现该服务。当前能力覆盖：
 
 - `GitHub`
 - `Google`
@@ -196,11 +199,10 @@ GitHub 聊天统一入口第一阶段只有在以下条件全部满足时，才�
 
 - 项目内已经提供本地 MCP manifest：
   - `mcp/service-auth-gateway/.mcp.json`
-- 当前用户环境中还额外完成了全局 Codex MCP 注册：
-  - `C:\Users\86175\.codex\config.toml`
+- 用户也可以在自己的全局 Codex 配置中额外注册：
   - `mcp_servers.service-auth-gateway`
 
-这表示该原型既可以作为项目内本地 MCP 原型独立运行，也已经在当前用户机器上被 Codex 从全局配置发现。
+这表示该原型既可以作为项目内本地 MCP 原型独立运行，也可以由用户自行提升为全局可发现的 MCP 服务。
 
 ## GitHub 发布能力边界
 
@@ -245,6 +247,8 @@ GitHub 聊天统一入口第一阶段只有在以下条件全部满足时，才�
   - 在 GitHub 缺口补全稳定后，再进入 Google 业务层补全
 - 远期探索方向：
   - 更接近官方 `@github` 使用体验的一体化发布入口
+  - 显式 `@助手` 入口及其可补充的中文别名
+  - 跨项目全局复用的统一聊天入口
 
 # 项目结构
 
@@ -256,8 +260,6 @@ GitHub 聊天统一入口第一阶段只有在以下条件全部满足时，才�
   - 项目全部说明文档的导航页
 - `README.md`
   - 项目简要入口说明
-- `CODEX_TASK_README.md`
-  - 本次任务目录约束，不作为项目主说明文档
 - `skill/service-auth-router/`
   - 统一登录 skill
 - `mcp/service-auth-gateway/`
@@ -339,21 +341,21 @@ GitHub 聊天统一入口第一阶段只有在以下条件全部满足时，才�
 本地运行入口：
 
 ```powershell
-cd D:\project\CodexWorkSpace\2026-04-29-login\mcp\service-auth-gateway
+cd .\mcp\service-auth-gateway
 npm start
 ```
 
 测试命令：
 
 ```powershell
-cd D:\project\CodexWorkSpace\2026-04-29-login\mcp\service-auth-gateway
+cd .\mcp\service-auth-gateway
 npm test
 ```
 
 MCP smoke test：
 
 ```powershell
-cd D:\project\CodexWorkSpace\2026-04-29-login\mcp\service-auth-gateway
+cd .\mcp\service-auth-gateway
 npm run smoke
 ```
 
@@ -460,6 +462,7 @@ auth_refresh_status_card({ cardId: "gmail" })
 - 对于 Google 业务操作，当前尚未进入本地业务层缺口补全阶段。
 - GitHub 聊天统一入口第一阶段当前仍未覆盖标签修改、merge、approve / request changes、release 等更完整写操作。
 - GitHub 聊天统一入口第一阶段当前仍要求业务操作明确提供 `repositoryUrl`，发布明确提供 `commitMessage` 并在预览后确认。
+- 当前尚未实现显式 `@助手` 聊天入口，现阶段仍主要依赖项目内 `service-auth-router` 规则和自然语言触发。
 - 即使后续接入 Codex 设置中的 MCP 管理，也不等于 Codex 原生会显示“Gmail 已登录 / GitHub 已登录”的平台级登录面板。
 - 当前面板中的 Gmail 状态卡只是 `google + gmail-basic` 的本地在线校验，不代表官方 Gmail connector 登录态。
 - 当前面板只覆盖状态查看与 GitHub 发布入口，不提供完整业务操作面板。
@@ -471,20 +474,21 @@ auth_refresh_status_card({ cardId: "gmail" })
 
 当前已完成的全局接入：
 
-- `service-auth-gateway` 已写入 `C:\Users\86175\.codex\config.toml`
 - 项目内同时保留独立 manifest：
   - `mcp/service-auth-gateway/.mcp.json`
-- 当前全局 MCP 配置中已存在：
+- 若用户需要跨项目使用，也可在自己的全局 Codex 配置中注册：
   - `mcp_servers.service-auth-gateway`
 - 当前需要注意：
-  - `C:\Users\86175\.codex\config.toml` 里的全局 `service-auth-gateway` 仍指向旧路径 `D:\project\CodexWorkSpace\2026-04-29-login\...`
-  - 这属于用户环境现状，不应误写为仓库外全局配置已自动同步到新的 worktree 或分支路径
+  - 全局注册属于用户自己的机器配置，不应误写为仓库默认已自动完成
+  - 全局配置中的项目路径需要由用户按自己下载后的实际路径填写
 
 这表示：
 
-- Codex 已可从全局配置发现此 MCP 服务
+- Codex 可通过项目内 manifest 发现此 MCP 服务
+- 若用户自行注册，也可从全局配置发现此 MCP 服务
 - 这属于 MCP 服务注册，而不是官方 connector 登录态接管
-- 项目内 manifest 与当前用户机器上的全局注册可以分别存在
+- 这属于 MCP 服务全局发现，不等于全局聊天入口 `@助手` 已经实现
+- 项目内 manifest 与用户自己的全局注册可以分别存在
 - 不等于官方 Gmail / GitHub 插件已经接管本地登录态
 
 # 后续建议

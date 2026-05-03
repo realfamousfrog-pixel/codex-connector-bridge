@@ -75,9 +75,11 @@
 
 相关导航：
 
-- [DOCUMENTATION_GUIDE.md](D:/project/CodexWorkSpace/2026-04-29-login/DOCUMENTATION_GUIDE.md)
-- [PROJECT_CONTEXT.md](D:/project/CodexWorkSpace/2026-04-29-login/PROJECT_CONTEXT.md)
-- [PUBLIC_SETUP_GUIDE.md](D:/project/CodexWorkSpace/2026-04-29-login/references/PUBLIC_SETUP_GUIDE.md)
+- [DOCUMENTATION_GUIDE.md](../DOCUMENTATION_GUIDE.md)
+- [PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md)
+- [PUBLIC_SETUP_GUIDE.md](./PUBLIC_SETUP_GUIDE.md)
+- [GITHUB_CREDENTIAL_SETUP.md](./GITHUB_CREDENTIAL_SETUP.md)
+- [GOOGLE_CREDENTIAL_SETUP.md](./GOOGLE_CREDENTIAL_SETUP.md)
 
 ## 使用前提
 
@@ -1035,7 +1037,7 @@ auth_logout({ provider: "google" })
 
 更完整说明可参考：
 
-- [LOGIN_STATUS_USAGE.md](D:/project/CodexWorkSpace/2026-04-29-login/references/LOGIN_STATUS_USAGE.md)
+- [LOGIN_STATUS_USAGE.md](./LOGIN_STATUS_USAGE.md)
 
 当前状态含义如下：
 

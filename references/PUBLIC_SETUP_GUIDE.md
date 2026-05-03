@@ -116,7 +116,7 @@ $env:CODEX_AUTH_GATEWAY_DATA_DIR="D:\your\data\dir"
 如果你只想先验证 GitHub：
 
 1. 启动 `service-auth-gateway`
-2. 准备 GitHub PAT
+2. 先按 [GitHub 凭证指南](./GITHUB_CREDENTIAL_SETUP.md) 准备 GitHub PAT
 3. 调用：
 
 ```text
@@ -148,7 +148,7 @@ auth_status({ provider: "github" })
 
 如果你要验证 Google：
 
-1. 准备你自己的 Google OAuth client 信息
+1. 先按 [Google 凭证指南](./GOOGLE_CREDENTIAL_SETUP.md) 准备你自己的 Google OAuth client 信息
 2. 启动 `service-auth-gateway`
 3. 调用：
 

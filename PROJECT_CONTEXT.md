@@ -231,12 +231,13 @@ GitHub 聊天统一入口第一阶段只有在以下条件全部满足时，才�
     - 校验仓库 owner 是否属于当前已登录个人账号
     - 检查目标仓库是否存在、是否为空仓、是否允许自动创建
     - 检查当前项目 git 状态、`origin` 状态与待提交预览
-  - 基于仓库链接的 GitHub 发布执行：
-    - 仓库不存在时可自动创建个人仓库
-    - 非 git 目录可自动 `git init`
-    - 首次提交默认使用 `main`
-    - 自动绑定干净 HTTPS `origin`
-    - 使用用户提供的 commit message 完成 commit 与 push
+- 基于仓库链接的 GitHub 发布执行：
+  - 仓库不存在时可自动创建个人仓库
+  - 非 git 目录可自动 `git init`
+  - 首次提交默认使用 `main`
+  - 自动绑定干净 HTTPS `origin`
+  - 使用用户提供的 commit message 完成 commit 与 push
+  - 工作区干净但本地已存在未推送 commit 时，支持跳过新建 commit，直接恢复执行 push
 - 当前未实现：
   - 在本地 MCP 内直接执行 GitHub 标签修改、merge、approve / request changes、release 等更完整写操作
   - 在本地 MCP 内直接执行 GitHub Pages、Actions 等更完整业务 API
@@ -468,8 +469,9 @@ auth_refresh_status_card({ cardId: "gmail" })
 - 当前面板中的 Gmail 状态卡只是 `google + gmail-basic` 的本地在线校验，不代表官方 Gmail connector 登录态。
 - 当前面板只覆盖状态查看与 GitHub 发布入口，不提供完整业务操作面板。
 - GitHub 发布 v1 当前只支持当前已登录个人账号名下仓库，不支持组织仓库。
-- GitHub 发布 v1 当前要求用户显式提供 commit message，并在预览后确认。
+- GitHub 发布 v1 当前要求用户显式提供 commit message，并在预览后确认；若只是恢复推送已存在的本地 commit，则当前仍保留该字段作为接口兼容输入，但不会新建 commit。
 - GitHub 发布 v1 当前不处理非空远端自动合并、pull、rebase、force push、子模块或 LFS。
+- GitHub 发布 v1 当前不处理本地分支 behind、diverged 后的 pull、merge、rebase 恢复。
 
 ## 全局接入现状
 

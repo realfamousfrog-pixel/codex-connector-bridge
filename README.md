@@ -43,6 +43,7 @@
 - 基于仓库链接的发布预览 / 执行：
   - `github_publish_prepare`
   - `github_publish_execute`
+  - 支持“工作区有未提交改动时的正常发布”与“已提交但未推送时的恢复发布”
 
 ### Google 现状
 
@@ -84,6 +85,7 @@
 - GitHub 发布 v1 当前不支持：
   - 组织仓库
   - 非空远端自动合并
+  - behind / diverged 后的恢复
   - pull / rebase / force push
 
 ## 最短上手

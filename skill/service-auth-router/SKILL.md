@@ -199,6 +199,7 @@ Current non-goals for phase one:
   - Missing-parameter behavior: ask for the missing field before any publish tool call
   - Route decision: call `auth_resolve_route` for `publish`
   - Execution rule: call `github_publish_prepare` first and stop at the preview summary before `github_publish_execute`
+  - Recovery rule: if prepare identifies a clean working tree but existing local commits that are still ahead of remote, treat it as a valid publish recovery flow and continue with `github_publish_execute`
 
 ### Blocked recovery
 
@@ -227,6 +228,7 @@ For business-operation requests, prefer `auth_resolve_route` first so the respon
 For GitHub business-operation requests in V1, `repositoryUrl` is required for local fallback tools.
 For local write and publish execution, include a short execution-plan summary before asking for confirmation.
 For local publish requests, prefer `github_publish_prepare` first, surface any blocking reason verbatim, and only call `github_publish_execute` after the user has confirmed preview, visibility, and commit message requirements.
+For push-only publish recovery, still collect `commitMessage` for v1 interface compatibility, but explain that no new commit will be created when the gateway is only pushing existing ahead commits.
 
 ## References
 

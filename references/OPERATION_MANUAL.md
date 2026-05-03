@@ -735,6 +735,7 @@ github_publish_prepare({
 - `origin` 是否与目标仓库冲突
 - 目标仓库是否存在、是否为空仓、是否允许自动创建
 - 当前项目有哪些待提交文件
+- 当前分支是否存在仅待推送、尚未推到远端的本地 commit
 
 #### 预览结果
 
@@ -745,6 +746,15 @@ github_publish_prepare({
 - 待提交文件清单
 - 是否需要你补 `visibility`
 - 是否需要你确认预览
+
+当前预览结果分两类：
+
+- 普通发布：
+  - 会展示待提交文件清单
+  - 执行时会 stage、commit、push
+- 恢复发布：
+  - 当工作区已干净，但本地分支仍有未推送 commit 时返回
+  - 这时不会再新建 commit，而是直接 push 现有本地提交
 
 #### 第二步：执行发布
 
@@ -766,6 +776,7 @@ github_publish_execute({
 - 如果目标仓库已存在且可直接用，则不需要 `visibility` / `createRepository`
 - 如果目标仓库不存在，则必须显式提供 `visibility`
 - `commitMessage` 必须由你提供，当前不会自动生成
+- 若预览结果属于“恢复发布”，当前仍保留 `commitMessage` 入参，但执行时不会新建 commit
 
 #### 执行结果
 
@@ -773,7 +784,8 @@ github_publish_execute({
 - 当前目录不是 git 仓库时，会自动 `git init`
 - 首次分支默认用 `main`
 - 会绑定干净 HTTPS `origin`
-- 会完成 stage、commit、push
+- 普通发布会完成 stage、commit、push
+- 恢复发布会跳过新建 commit，直接 push 当前分支上已存在但尚未推送的本地提交
 - token 不会写入 `.git/config` 或 remote URL
 
 ### 查看单个 provider 状态
@@ -1189,6 +1201,15 @@ auth_validate({ provider: "..." })
 
 - 当前目录下是否真的有新增、修改或删除文件
 - 是否把错误的目录路径传给了 `projectPath`
+- 如果工作区已干净，但本地分支仍 ahead，当前应返回“可直接推送”的恢复发布结果，而不是 `no_changes`
+
+### GitHub 发布提示需要先同步分支
+
+先检查：
+
+- 当前分支是否已经落后于远端
+- 当前分支是否与 upstream 出现分叉
+- 当前版本仍不支持在发布链路里自动做 pull、merge、rebase 恢复
 
 ## 后续扩展预留
 

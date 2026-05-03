@@ -106,17 +106,18 @@ Credential storage behavior:
    - `projectPath`
    - `repositoryUrl`
 2. The gateway validates local GitHub auth, checks the repository link, checks local git state, and returns a staged-file preview.
-3. If the target personal repository does not exist yet, the preview will require:
+3. If the working tree is already clean but the current branch is ahead of remote, the preview returns a push-only recovery result instead of blocking as no changes.
+4. If the target personal repository does not exist yet, the preview will require:
    - `visibility`
    - `createRepository=true`
-4. Call `github_publish_execute` with:
+5. Call `github_publish_execute` with:
    - `projectPath`
    - `repositoryUrl`
    - `commitMessage`
    - `confirmStagePreview=true`
    - optional `visibility`
    - optional `createRepository=true`
-5. The gateway will create the personal repository when allowed, initialize git if needed, add a clean HTTPS `origin`, commit, and push.
+6. The gateway will create the personal repository when allowed, initialize git if needed, add a clean HTTPS `origin`, and then either commit and push or directly push existing ahead commits.
 
 ## Route Resolution
 

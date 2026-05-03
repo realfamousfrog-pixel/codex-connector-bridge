@@ -13,6 +13,13 @@ function summarizeFiles(lines) {
   };
 }
 
+function summarizePreview(lines, previewKind) {
+  return {
+    ...summarizeFiles(lines),
+    previewKind,
+  };
+}
+
 function buildBlockedResult({ reason, message, ...rest }) {
   return {
     ok: false,
@@ -28,6 +35,17 @@ function buildReadyResult(payload) {
     ok: true,
     status: "ready",
     ...payload,
+  };
+}
+
+function buildRepositoryState(repoRef, repository, ownerType = "user") {
+  return {
+    ...repoRef,
+    exists: Boolean(repository),
+    canCreate: !repository,
+    ownerMatchesAuthenticatedUser: true,
+    ownerType,
+    isEmpty: repository ? repository.size === 0 : null,
   };
 }
 
@@ -88,13 +106,7 @@ export class PublishService {
         reason: "project_path_not_repo_root",
         message: "projectPath must point at the git repository root when the project is already a git repository.",
         auth,
-        repository: {
-          ...repoRef,
-          exists: false,
-          canCreate: false,
-          ownerMatchesAuthenticatedUser: true,
-          ownerType: "user",
-        },
+        repository: buildRepositoryState(repoRef, null),
         project: projectState,
       });
     }
@@ -111,12 +123,8 @@ export class PublishService {
         message: "The current project already has an origin remote that does not match the target repository.",
         auth,
         repository: {
-          ...repoRef,
-          exists: Boolean(repository),
+          ...buildRepositoryState(repoRef, repository),
           canCreate: false,
-          ownerMatchesAuthenticatedUser: true,
-          ownerType: "user",
-          isEmpty: repository ? repository.size === 0 : null,
         },
         project: {
           ...projectState,
@@ -131,14 +139,7 @@ export class PublishService {
         reason: "organization_not_supported",
         message: "Organization repositories are not supported in v1.",
         auth,
-        repository: {
-          ...repoRef,
-          exists: true,
-          canCreate: false,
-          ownerMatchesAuthenticatedUser: true,
-          ownerType: repository.owner.type.toLowerCase(),
-          isEmpty: repository.size === 0,
-        },
+        repository: buildRepositoryState(repoRef, repository, repository.owner.type.toLowerCase()),
         project: projectState,
       });
     }
@@ -149,12 +150,8 @@ export class PublishService {
         message: "The target GitHub repository already contains content and this project is not already bound to the same origin.",
         auth,
         repository: {
-          ...repoRef,
-          exists: true,
+          ...buildRepositoryState(repoRef, repository),
           canCreate: false,
-          ownerMatchesAuthenticatedUser: true,
-          ownerType: "user",
-          isEmpty: false,
         },
         project: {
           ...projectState,
@@ -165,50 +162,74 @@ export class PublishService {
     }
 
     const preview = await this.gitClient.getStatusPreview(projectPath, projectState);
+    const normalizedProjectState = {
+      ...projectState,
+      remoteStatus: remoteMatches
+        ? "origin_match"
+        : projectState.hasOrigin
+          ? projectState.remoteStatus
+          : projectState.isGitRepository
+            ? "no_origin"
+            : "non_repository",
+      targetOriginUrl: repoRef.cloneUrl,
+    };
+    if (projectState.hasUpstream && projectState.behindCount > 0) {
+      return buildBlockedResult({
+        reason: "branch_sync_required",
+        message:
+          "The current branch is behind or diverged from its upstream. Publish v1 does not support pull, merge, or rebase recovery.",
+        auth,
+        repository: buildRepositoryState(repoRef, repository),
+        project: normalizedProjectState,
+        preview: summarizePreview(preview.lines, "working_tree_changes"),
+      });
+    }
+    const canPushOnly =
+      preview.count === 0 &&
+      projectState.hasCommits &&
+      Boolean(projectState.currentBranch) &&
+      (
+        (projectState.hasUpstream && projectState.aheadCount > 0) ||
+        !projectState.hasUpstream
+      );
+    if (canPushOnly) {
+      return buildReadyResult({
+        auth,
+        repository: buildRepositoryState(repoRef, repository),
+        project: normalizedProjectState,
+        publishMode: "push_only",
+        aheadCount: projectState.aheadCount,
+        previewKind: "ahead_commits",
+        preview: summarizePreview([], "ahead_commits"),
+        requiredInputs: {
+          commitMessage: true,
+          confirmStagePreview: true,
+          visibility: repository ? false : true,
+          createRepository: repository ? false : true,
+        },
+        nextAction: "confirm_publish_execute",
+        message: "GitHub publish recovery is ready. There are existing local commits that can be pushed without creating a new commit.",
+      });
+    }
     if (preview.count === 0) {
       return buildBlockedResult({
         reason: "no_changes",
         message: "There are no local changes to commit and push.",
         auth,
-        repository: {
-          ...repoRef,
-          exists: Boolean(repository),
-          canCreate: !repository,
-          ownerMatchesAuthenticatedUser: true,
-          ownerType: "user",
-          isEmpty: repository ? repository.size === 0 : null,
-        },
-        project: {
-          ...projectState,
-          remoteStatus: remoteMatches ? "origin_match" : projectState.remoteStatus,
-          targetOriginUrl: repoRef.cloneUrl,
-        },
-        preview: summarizeFiles(preview.lines),
+        repository: buildRepositoryState(repoRef, repository),
+        project: normalizedProjectState,
+        preview: summarizePreview(preview.lines, "working_tree_changes"),
       });
     }
 
     return buildReadyResult({
       auth,
-      repository: {
-        ...repoRef,
-        exists: Boolean(repository),
-        canCreate: !repository,
-        ownerMatchesAuthenticatedUser: true,
-        ownerType: "user",
-        isEmpty: repository ? repository.size === 0 : null,
-      },
-      project: {
-        ...projectState,
-        remoteStatus: remoteMatches
-          ? "origin_match"
-          : projectState.hasOrigin
-            ? projectState.remoteStatus
-            : projectState.isGitRepository
-              ? "no_origin"
-              : "non_repository",
-        targetOriginUrl: repoRef.cloneUrl,
-      },
-      preview: summarizeFiles(preview.lines),
+      repository: buildRepositoryState(repoRef, repository),
+      project: normalizedProjectState,
+      publishMode: "commit_and_push",
+      aheadCount: projectState.aheadCount,
+      previewKind: "working_tree_changes",
+      preview: summarizePreview(preview.lines, "working_tree_changes"),
       requiredInputs: {
         commitMessage: true,
         confirmStagePreview: true,
@@ -224,9 +245,9 @@ export class PublishService {
 
   async execute({
     projectPath,
-    repositoryUrl,
-    commitMessage,
-    confirmStagePreview,
+      repositoryUrl,
+      commitMessage,
+      confirmStagePreview,
     visibility,
     createRepository,
   }) {
@@ -274,6 +295,65 @@ export class PublishService {
       await this.gitClient.addOrigin(projectPath, targetRemote);
     }
 
+    const publishMode = prepared.publishMode ?? "commit_and_push";
+    if (publishMode === "push_only") {
+      const finalState = await this.gitClient.inspectProject(projectPath);
+      const branch = finalState.currentBranch;
+      if (!branch) {
+        return buildBlockedResult({
+          reason: "branch_not_publishable",
+          message: "The current git branch could not be determined for push-only publish recovery.",
+          auth: prepared.auth,
+          repository: prepared.repository,
+          project: prepared.project,
+          preview: prepared.preview,
+        });
+      }
+      if (finalState.hasUpstream && finalState.behindCount > 0) {
+        return buildBlockedResult({
+          reason: "branch_sync_required",
+          message:
+            "The current branch is behind or diverged from its upstream. Publish v1 does not support pull, merge, or rebase recovery.",
+          auth: prepared.auth,
+          repository: prepared.repository,
+          project: prepared.project,
+          preview: prepared.preview,
+        });
+      }
+      const reusedAheadCount = finalState.hasUpstream ? finalState.aheadCount : 0;
+      await this.gitClient.push(projectPath, branch, secret.token);
+      return {
+        ok: true,
+        status: "completed",
+        auth: prepared.auth,
+        repository: {
+          ...prepared.repository,
+          exists: true,
+          canCreate: false,
+          cloneUrl: targetRemote,
+          htmlUrl: repository.html_url ?? prepared.repository.normalizedUrl,
+        },
+        project: {
+          ...prepared.project,
+          isGitRepository: true,
+          hasOrigin: true,
+          currentBranch: branch,
+          remoteStatus: "origin_match",
+          hasUpstream: true,
+        },
+        publishMode: "push_only",
+        previewKind: "ahead_commits",
+        commit: {
+          message: commitMessage.trim(),
+          created: false,
+          reusedAheadCount,
+          branch,
+        },
+        nextAction: "ready",
+        message: "Existing local commits have been pushed to GitHub.",
+      };
+    }
+
     await this.gitClient.stageAll(projectPath);
     const stagedFiles = await this.gitClient.getStagedFiles(projectPath);
     if (stagedFiles.length === 0) {
@@ -312,9 +392,13 @@ export class PublishService {
       },
       commit: {
         message: commitMessage.trim(),
+        created: true,
+        reusedAheadCount: 0,
         stagedCount: stagedFiles.length,
         branch,
       },
+      publishMode: "commit_and_push",
+      previewKind: "working_tree_changes",
       nextAction: "ready",
       message: "Project has been committed and pushed to GitHub.",
     };

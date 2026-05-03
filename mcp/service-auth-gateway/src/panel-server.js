@@ -313,9 +313,16 @@ function pageTemplate(panelToken) {
     function renderPreview(data) {
       previewList.innerHTML = "";
       const files = data?.preview?.files || [];
-      previewSummary.textContent = files.length
-        ? \`共 \${files.length} 项待提交变更。\`
-        : "当前没有待提交的文件变更。";
+      if (data?.publishMode === "push_only") {
+        const aheadCount = Number(data?.aheadCount || 0);
+        previewSummary.textContent = aheadCount > 0
+          ? \`当前没有待提交文件，但有 \${aheadCount} 个未推送 commit，可直接执行推送。\`
+          : "当前没有待提交文件，但存在可直接推送的本地 commit。";
+      } else {
+        previewSummary.textContent = files.length
+          ? \`共 \${files.length} 项待提交变更。\`
+          : "当前没有待提交的文件变更。";
+      }
       for (const item of files) {
         const div = document.createElement("div");
         div.className = "preview-item";
@@ -333,9 +340,16 @@ function pageTemplate(panelToken) {
       }
       previewList.innerHTML = "";
       const files = data.preview.files || [];
-      previewSummary.textContent = files.length
-        ? \`共 \${files.length} 项待提交变更。\`
-        : "当前没有待提交的文件变更。";
+      if (data?.publishMode === "push_only") {
+        const aheadCount = Number(data?.aheadCount || data?.commit?.reusedAheadCount || 0);
+        previewSummary.textContent = aheadCount > 0
+          ? \`当前没有待提交文件，但有 \${aheadCount} 个未推送 commit，可直接执行推送。\`
+          : "当前没有待提交文件，但存在可直接推送的本地 commit。";
+      } else {
+        previewSummary.textContent = files.length
+          ? \`共 \${files.length} 项待提交变更。\`
+          : "当前没有待提交的文件变更。";
+      }
       for (const item of files) {
         const div = document.createElement("div");
         div.className = "preview-item";

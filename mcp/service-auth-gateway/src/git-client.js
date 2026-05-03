@@ -112,6 +112,10 @@ export class GitClient {
         boundaryConflict: false,
         hasCommits: false,
         currentBranch: null,
+        hasUpstream: false,
+        upstreamRef: null,
+        aheadCount: 0,
+        behindCount: 0,
         hasOrigin: false,
         originUrl: null,
         normalizedOriginUrl: null,
@@ -130,10 +134,34 @@ export class GitClient {
       cwd: projectPath,
       allowFailure: true,
     });
+    const upstream = await this.runGit(
+      ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"],
+      {
+        cwd: projectPath,
+        allowFailure: true,
+      },
+    );
     const origin = await this.runGit(["remote", "get-url", "origin"], {
       cwd: projectPath,
       allowFailure: true,
     });
+    const hasUpstream = upstream.ok && Boolean(upstream.stdout);
+    let aheadCount = 0;
+    let behindCount = 0;
+    if (hasUpstream) {
+      const aheadBehind = await this.runGit(
+        ["rev-list", "--left-right", "--count", "@{upstream}...HEAD"],
+        {
+          cwd: projectPath,
+          allowFailure: true,
+        },
+      );
+      if (aheadBehind.ok) {
+        const [behindText = "0", aheadText = "0"] = aheadBehind.stdout.split(/\s+/);
+        behindCount = Number.parseInt(behindText, 10) || 0;
+        aheadCount = Number.parseInt(aheadText, 10) || 0;
+      }
+    }
 
     return {
       projectPath,
@@ -143,6 +171,10 @@ export class GitClient {
       boundaryConflict,
       hasCommits: head.ok,
       currentBranch: currentBranch.ok && currentBranch.stdout ? currentBranch.stdout : null,
+      hasUpstream,
+      upstreamRef: hasUpstream ? upstream.stdout : null,
+      aheadCount,
+      behindCount,
       hasOrigin: origin.ok && Boolean(origin.stdout),
       originUrl: origin.ok ? origin.stdout : null,
       normalizedOriginUrl: origin.ok ? normalizeRemoteUrl(origin.stdout) : null,

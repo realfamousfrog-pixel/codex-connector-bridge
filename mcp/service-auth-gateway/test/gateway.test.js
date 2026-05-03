@@ -1637,6 +1637,294 @@ test("github_publish_prepare returns preview and required inputs for missing rep
   }
 });
 
+test("github_publish_prepare returns push_only recovery when branch is ahead and working tree is clean", async () => {
+  process.env.CODEX_AUTH_GATEWAY_SECRET_GITHUB = JSON.stringify({ token: "demo-token" });
+  const { PublishService } = await import("../src/publish-service.js");
+  const service = new PublishService({
+    gitClient: {
+      async inspectProject() {
+        return {
+          projectPath: "D:/demo",
+          gitAvailable: true,
+          isGitRepository: true,
+          repoRoot: "D:/demo",
+          boundaryConflict: false,
+          hasCommits: true,
+          currentBranch: "main",
+          hasUpstream: true,
+          upstreamRef: "origin/main",
+          aheadCount: 2,
+          behindCount: 0,
+          hasOrigin: true,
+          originUrl: "https://github.com/demo-user/demo-repo.git",
+          normalizedOriginUrl: "https://github.com/demo-user/demo-repo",
+          remoteStatus: "origin_present",
+          identity: {
+            userName: "Demo User",
+            userEmail: "demo@example.com",
+          },
+        };
+      },
+      async getStatusPreview() {
+        return { lines: [], count: 0 };
+      },
+    },
+    async validateGithubAuth() {
+      return {
+        provider: "github",
+        state: "authenticated",
+        accountLabel: "Demo User",
+        grantedBundles: ["github-basic"],
+        nextAction: "ready",
+        message: "GitHub token validated.",
+      };
+    },
+  });
+  const originalFetch = global.fetch;
+  global.fetch = async (url) => {
+    if (String(url).endsWith("/user")) {
+      return {
+        ok: true,
+        status: 200,
+        headers: new Headers({ "x-oauth-scopes": "repo,user" }),
+        async text() {
+          return JSON.stringify({ login: "demo-user" });
+        },
+      };
+    }
+    if (String(url).includes("/repos/demo-user/demo-repo")) {
+      return {
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        async text() {
+          return JSON.stringify({
+            size: 0,
+            owner: { type: "User" },
+            html_url: "https://github.com/demo-user/demo-repo",
+          });
+        },
+      };
+    }
+    throw new Error(`Unexpected URL: ${url}`);
+  };
+  try {
+    const result = await service.prepare({
+      projectPath: "D:/demo",
+      repositoryUrl: "https://github.com/demo-user/demo-repo",
+    });
+    assert.equal(result.ok, true);
+    assert.equal(result.publishMode, "push_only");
+    assert.equal(result.previewKind, "ahead_commits");
+    assert.equal(result.aheadCount, 2);
+    assert.equal(result.preview.count, 0);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test("github_publish_execute pushes existing ahead commits without creating a new commit", async () => {
+  const actions = [];
+  const gitClient = {
+    async inspectProject() {
+      actions.push("inspectProject");
+      return {
+        projectPath: "D:/demo",
+        gitAvailable: true,
+        isGitRepository: true,
+        repoRoot: "D:/demo",
+        boundaryConflict: false,
+        hasCommits: true,
+        currentBranch: "main",
+        hasUpstream: true,
+        upstreamRef: "origin/main",
+        aheadCount: 1,
+        behindCount: 0,
+        hasOrigin: true,
+        originUrl: "https://github.com/demo-user/demo-repo.git",
+        normalizedOriginUrl: "https://github.com/demo-user/demo-repo",
+        remoteStatus: "origin_present",
+        identity: {
+          userName: "Demo User",
+          userEmail: "demo@example.com",
+        },
+      };
+    },
+    async getStatusPreview() {
+      actions.push("getStatusPreview");
+      return { lines: [], count: 0 };
+    },
+    async initRepository() {
+      actions.push("initRepository");
+    },
+    async pointHeadToMain() {
+      actions.push("pointHeadToMain");
+    },
+    async addOrigin() {
+      actions.push("addOrigin");
+    },
+    async stageAll() {
+      actions.push("stageAll");
+    },
+    async getStagedFiles() {
+      actions.push("getStagedFiles");
+      return [];
+    },
+    async commit() {
+      actions.push("commit");
+    },
+    async push(projectPath, branch) {
+      actions.push(`push:${projectPath}:${branch}`);
+    },
+  };
+  process.env.CODEX_AUTH_GATEWAY_SECRET_GITHUB = JSON.stringify({ token: "demo-token" });
+  const { PublishService } = await import("../src/publish-service.js");
+  const service = new PublishService({
+    gitClient,
+    async validateGithubAuth() {
+      return {
+        provider: "github",
+        state: "authenticated",
+        accountLabel: "Demo User",
+        grantedBundles: ["github-basic"],
+        nextAction: "ready",
+        message: "GitHub token validated.",
+      };
+    },
+  });
+  const originalFetch = global.fetch;
+  global.fetch = async (url, options = {}) => {
+    if (String(url).endsWith("/user")) {
+      return {
+        ok: true,
+        status: 200,
+        headers: new Headers({ "x-oauth-scopes": "repo,user" }),
+        async text() {
+          return JSON.stringify({ login: "demo-user" });
+        },
+      };
+    }
+    if (String(url).includes("/repos/demo-user/demo-repo")) {
+      return {
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        async text() {
+          return JSON.stringify({
+            size: 0,
+            owner: { type: "User" },
+            html_url: "https://github.com/demo-user/demo-repo",
+          });
+        },
+      };
+    }
+    if (String(url).endsWith("/user/repos")) {
+      assert.equal(options.method, "POST");
+    }
+    throw new Error(`Unexpected URL: ${url}`);
+  };
+  try {
+    const result = await service.execute({
+      projectPath: "D:/demo",
+      repositoryUrl: "https://github.com/demo-user/demo-repo",
+      commitMessage: "ignored for push only",
+      confirmStagePreview: true,
+    });
+    assert.equal(result.ok, true);
+    assert.equal(result.publishMode, "push_only");
+    assert.equal(result.commit.created, false);
+    assert.equal(result.commit.reusedAheadCount, 1);
+    assert.equal(actions.includes("commit"), false);
+    assert.equal(actions.includes("stageAll"), false);
+    assert.equal(actions.some((item) => item.startsWith("push:D:/demo:main")), true);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test("github_publish_prepare keeps no_changes when working tree is clean and branch is not ahead", async () => {
+  process.env.CODEX_AUTH_GATEWAY_SECRET_GITHUB = JSON.stringify({ token: "demo-token" });
+  const { PublishService } = await import("../src/publish-service.js");
+  const service = new PublishService({
+    gitClient: {
+      async inspectProject() {
+        return {
+          projectPath: "D:/demo",
+          gitAvailable: true,
+          isGitRepository: true,
+          repoRoot: "D:/demo",
+          boundaryConflict: false,
+          hasCommits: true,
+          currentBranch: "main",
+          hasUpstream: true,
+          upstreamRef: "origin/main",
+          aheadCount: 0,
+          behindCount: 0,
+          hasOrigin: true,
+          originUrl: "https://github.com/demo-user/demo-repo.git",
+          normalizedOriginUrl: "https://github.com/demo-user/demo-repo",
+          remoteStatus: "origin_present",
+          identity: {
+            userName: "Demo User",
+            userEmail: "demo@example.com",
+          },
+        };
+      },
+      async getStatusPreview() {
+        return { lines: [], count: 0 };
+      },
+    },
+    async validateGithubAuth() {
+      return {
+        provider: "github",
+        state: "authenticated",
+        accountLabel: "Demo User",
+        grantedBundles: ["github-basic"],
+        nextAction: "ready",
+        message: "GitHub token validated.",
+      };
+    },
+  });
+  const originalFetch = global.fetch;
+  global.fetch = async (url) => {
+    if (String(url).endsWith("/user")) {
+      return {
+        ok: true,
+        status: 200,
+        headers: new Headers({ "x-oauth-scopes": "repo,user" }),
+        async text() {
+          return JSON.stringify({ login: "demo-user" });
+        },
+      };
+    }
+    if (String(url).includes("/repos/demo-user/demo-repo")) {
+      return {
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        async text() {
+          return JSON.stringify({
+            size: 0,
+            owner: { type: "User" },
+            html_url: "https://github.com/demo-user/demo-repo",
+          });
+        },
+      };
+    }
+    throw new Error(`Unexpected URL: ${url}`);
+  };
+  try {
+    const result = await service.prepare({
+      projectPath: "D:/demo",
+      repositoryUrl: "https://github.com/demo-user/demo-repo",
+    });
+    assert.equal(result.ok, false);
+    assert.equal(result.reason, "no_changes");
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
 test("github_publish_execute rejects execution without preview confirmation", async () => {
   const gateway = await createGateway();
   await assert.rejects(
